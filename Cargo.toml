@@ -4,6 +4,11 @@ version = "0.1.0"
 license = "MIT"
 authors = ["uuhan <xuminhui189@gmail.com>"]
 edition = "2018"
+links = "cat"
 
 [build-dependencies]
 cmake = "0.1.35"
+
+[dependencies]
+libc = "0.2.48"
+log = "0.4.6"

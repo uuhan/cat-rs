@@ -1,6 +1,10 @@
 #![allow(non_snake_case, non_camel_case_types)]
 
 extern crate libc;
+mod client_config;
+
+use client_config::catChecktPtrWithName;
+
 use libc::{
     c_int, c_ulong, c_void, gettimeofday, sighandler_t, signal, timeval, SIGINT, SIGPIPE, SIG_IGN,
 };
@@ -45,19 +49,26 @@ extern "C" {
         ...
     );
 
+    /// __sync_add_and_fetch
     fn addCountMetricToAggregator(name: *const u8, count: i32);
     fn addDurationMetricToAggregator(name: *const u8, timeMs: i32);
-    fn catChecktPtrWithName(ptr: *mut ::std::os::raw::c_void, ptrName: *mut u8);
+
+    // fn catChecktPtrWithName(ptr: *mut ::std::os::raw::c_void, ptrName: *mut u8);
     fn catMessageManagerDestroy();
     fn catMessageManagerStartTrans(trans: *mut _CatTransaction);
+
+    /// sds
     fn catsdsfree(s: *mut u8);
     fn catsdsfromlonglong(value: isize) -> *mut u8;
     fn catsdsnew(init: *const u8) -> *mut u8;
+
+    /// __sync_add_and_fetch {0}
     fn clearCatAggregatorThread();
     fn clearCatClientConfig();
     fn clearCatMonitor();
     fn clearCatSenderThread();
     fn clearCatServerConnManager();
+
     fn createCatEvent(type_: *const u8, name: *const u8) -> *mut _CatMessage;
     fn createCatHeartBeat(type_: *const u8, name: *const u8) -> *mut _CatMessage;
     fn createCatMetric(type_: *const u8, name: *const u8) -> *mut _CatMessage;

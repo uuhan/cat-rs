@@ -14,7 +14,7 @@ pub use ffi::{
 pub fn cat_version() -> String {
     let r = unsafe {
         let t = ffi::catVersion();
-        CStr::from_ptr(t).to_str().unwrap()
+        CStr::from_ptr(t as *mut i8).to_str().unwrap()
     };
 
     r.to_owned()
@@ -34,6 +34,6 @@ pub fn cat_client_init(appkey: String) -> i32 {
     unsafe { ffi::catClientInit(c!(appkey)) }
 }
 
-pub fn cat_client_init_with_config(appkey: String, config: &ffi::CatClientConfig) -> i32 {
+pub fn cat_client_init_with_config(appkey: String, config: &mut ffi::CatClientConfig) -> i32 {
     unsafe { ffi::catClientInitWithConfig(c!(appkey), config) }
 }

@@ -4,10 +4,10 @@ use cat::CatClient;
 use cat::CatTransaction;
 
 pub fn main() {
-    let cat = CatClient::new("test".to_owned());
+    let mut cat = CatClient::new("test".to_owned());
     cat.init(None);
     let version = cat.version();
-    let tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
+    let mut tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
     tr.complete();
 
     println!("{}", version);

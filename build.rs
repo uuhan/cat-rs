@@ -1,7 +1,44 @@
-use cmake;
+use cc;
 
 fn main() {
-    let dst = cmake::build("./ccat/");
-    println!("cargo:rustc-link-search=native={}/lib/", dst.display());
-    println!("cargo:rustc-link-lib=static=catclient");
+    cc::Build::new()
+        .flag("-w")
+        .include("ccat")
+        .file("ccat/lib/cat_ae.c")
+        .file("ccat/lib/cat_anet.c")
+        .file("ccat/lib/cat_ccmap.c")
+        .file("ccat/lib/cat_clog.c")
+        .file("ccat/lib/cat_dict.c")
+        .file("ccat/lib/cat_ezxml.c")
+        .file("ccat/lib/cat_json.c")
+        .file("ccat/lib/cat_mpsc_queue.c")
+        .file("ccat/lib/cat_network_util.c")
+        .file("ccat/lib/cat_sds.c")
+        .file("ccat/lib/cat_stack.c")
+        .file("ccat/lib/cat_static_queue.c")
+        .file("ccat/lib/cat_time_util.c")
+        .file("ccat/ccat/client.c")
+        .file("ccat/ccat/client_config.c")
+        .file("ccat/ccat/context.c")
+        .file("ccat/ccat/encoder.c")
+        .file("ccat/ccat/encoder_binary.c")
+        .file("ccat/ccat/encoder_text.c")
+        .file("ccat/ccat/functions.c")
+        .file("ccat/ccat/message.c")
+        .file("ccat/ccat/message_aggregator.c")
+        .file("ccat/ccat/message_aggregator_event.c")
+        .file("ccat/ccat/message_aggregator_metric.c")
+        .file("ccat/ccat/message_aggregator_trans.c")
+        .file("ccat/ccat/message_helper.c")
+        .file("ccat/ccat/message_id.c")
+        .file("ccat/ccat/message_manager.c")
+        .file("ccat/ccat/message_sender.c")
+        .file("ccat/ccat/message_tree.c")
+        .file("ccat/ccat/monitor.c")
+        .file("ccat/ccat/monitor_collector.c")
+        .file("ccat/ccat/router_json_parser.c")
+        .file("ccat/ccat/server_connection_manager.c")
+        .file("ccat/ccat/transaction.c")
+        .compile("ccat");
+    println!("cargo:rustc-link-lib=static=ccat");
 }

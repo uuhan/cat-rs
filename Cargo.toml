@@ -7,7 +7,7 @@ edition = "2018"
 links = "cat"
 
 [build-dependencies]
-cmake = "0.1.35"
+cc = "1.0.29"
 
 [dependencies]
 libc = "0.2.48"

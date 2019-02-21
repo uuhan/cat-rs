@@ -7,7 +7,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "cat-rs"
 version = "0.1.0"
 dependencies = [
- "cmake 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "ctest 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -22,14 +22,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "cfg-if"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "cmake"
-version = "0.1.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "ctest"
@@ -296,7 +288,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)" = "4390a3b5f4f6bce9c1d0c00128379df433e53777fdd30e92f16a529332baec4e"
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
-"checksum cmake 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)" = "6ec65ee4f9c9d16f335091d23693457ed4928657ba4982289d7fafee03bc614a"
 "checksum ctest 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)" = "bdd68280d9e354783b35ddc72b47a6288a6bcf98a82a15cdd5a363197265902b"
 "checksum extprim 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "054bc2552b3f66fa8097e29e47255bfff583c08e737a67cbbb54b817ddaa5206"
 "checksum fuchsia-cprng 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"

@@ -2,6 +2,7 @@ use cc;
 
 fn main() {
     cc::Build::new()
+        .flag("-std=gnu99")
         .flag("-w")
         .include("ccat")
         .file("ccat/lib/cat_ae.c")

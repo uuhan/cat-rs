@@ -1,5 +1,4 @@
 use crate::ffi::*;
-use std::ffi::CStr;
 use std::ffi::CString;
 
 pub struct CatClient<'a> {
@@ -26,7 +25,7 @@ impl<'a> CatClient<'a> {
                 "cat client <{}> init with config: {}",
                 self.appkey, self.config
             );
-            let rc = catClientInitWithConfig(
+            catClientInitWithConfig(
                 CString::new(self.appkey).unwrap().as_ptr() as *const u8,
                 &mut self.config,
             );
@@ -36,12 +35,7 @@ impl<'a> CatClient<'a> {
 
     pub fn destroy(&self) {
         warn!("cat client is being destroyed!");
-        let rc = unsafe { catClientDestroy() };
-        if rc != 0 {
-            warn!("cat is destroyed successfully!")
-        } else {
-            error!("cat is destroyed failed!")
-        }
+        unsafe { catClientDestroy() };
     }
 
     pub fn version(&self) -> &str {

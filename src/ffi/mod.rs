@@ -1,7 +1,6 @@
-#![allow(non_snake_case, non_camel_case_types)]
+#![allow(non_snake_case, non_camel_case_types, unused)]
 
 extern crate libc;
-mod client_config;
 
 use libc::{gettimeofday, sighandler_t, signal, timeval, SIGINT, SIGPIPE, SIG_IGN};
 
@@ -15,7 +14,7 @@ use std::ptr;
 type cstring = *const u8;
 
 /// cat static
-static mut g_cat_init: i32 = 0i32;
+static mut G_CAT_INIT: i32 = 0i32;
 
 #[macro_export]
 macro_rules! c {
@@ -96,7 +95,7 @@ pub unsafe fn createMessageId() -> *mut u8 {
     }
 }
 
-pub unsafe fn createRemoteServerMessageId(mut appkey: *const u8) -> *mut u8 {
+pub unsafe fn createRemoteServerMessageId(appkey: *const u8) -> *mut u8 {
     if isCatEnabled() {
         getNextMessageIdByAppkey(appkey)
     } else {
@@ -128,7 +127,7 @@ pub unsafe fn getThreadLocalMessageTreeParentId() -> *mut u8 {
     }
 }
 
-pub unsafe fn setThreadLocalMessageTreeId(mut messageId: *mut u8) {
+pub unsafe fn setThreadLocalMessageTreeId(messageId: *mut u8) {
     if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
         if !(*pTree).messageId.is_null() {
@@ -140,7 +139,7 @@ pub unsafe fn setThreadLocalMessageTreeId(mut messageId: *mut u8) {
     }
 }
 
-pub unsafe fn setThreadLocalMessageTreeRootId(mut messageId: *mut u8) {
+pub unsafe fn setThreadLocalMessageTreeRootId(messageId: *mut u8) {
     if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
         if !(*pTree).rootMessageId.is_null() {
@@ -152,7 +151,7 @@ pub unsafe fn setThreadLocalMessageTreeRootId(mut messageId: *mut u8) {
     }
 }
 
-pub unsafe fn setThreadLocalMessageTreeParentId(mut messageId: *mut u8) {
+pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
     if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
         if !(*pTree).parentMessageId.is_null() {
@@ -164,31 +163,24 @@ pub unsafe fn setThreadLocalMessageTreeParentId(mut messageId: *mut u8) {
     }
 }
 
-pub unsafe fn catClientInitWithConfig(
-    mut appkey: *const u8,
-    mut config: *mut _CatClientConfig,
-) -> i32 {
-    if g_cat_init != 0 {
+pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut _CatClientConfig) -> i32 {
+    if G_CAT_INIT != 0 {
         0i32
     } else {
-        g_cat_init = 1i32;
+        G_CAT_INIT = 1i32;
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
         (if loadCatClientConfig((*b"/data/appdatas/cat/client.xml\0").as_ptr()) < 0i32 {
-            g_cat_init = 0;
+            G_CAT_INIT = 0;
             g_cat_enabledFlag = 0;
             error!("Failed to initialize cat: Error occurred while loading client config.");
             0
         } else {
-            println!(
-                "appkey: {}",
-                CStr::from_ptr(appkey as *const i8).to_str().unwrap()
-            );
             g_config.appkey = catsdsnew(appkey);
             initMessageManager(appkey, g_config.selfHost);
             initMessageIdHelper();
             if initCatServerConnManager() == 0 {
-                g_cat_init = 0;
+                G_CAT_INIT = 0;
                 g_cat_enabledFlag = 0;
                 error!("Failed to initialize cat: Error occurred while getting router from remote server.");
                 0
@@ -207,13 +199,13 @@ pub unsafe fn catClientInitWithConfig(
     }
 }
 
-pub unsafe fn catClientInit(mut appkey: *const u8) -> i32 {
+pub unsafe fn catClientInit(appkey: *const u8) -> i32 {
     catClientInitWithConfig(appkey, &mut CatClientConfig::default())
 }
 
 pub unsafe fn catClientDestroy() -> i32 {
     g_cat_enabledFlag = 0;
-    g_cat_init = 0;
+    G_CAT_INIT = 0;
     clearCatMonitor();
     catMessageManagerDestroy();
     clearCatAggregatorThread();
@@ -239,7 +231,7 @@ pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction
 }
 
 pub unsafe fn GetTime64() -> usize {
-    let mut buf: usize;
+    let buf: usize;
     let mut tv: timeval = mem::uninitialized();
     gettimeofday(&mut tv, ptr::null_mut());
     buf = (tv.tv_sec * 1000i64 + (tv.tv_usec / 1000i32) as (i64)) as (usize);
@@ -247,11 +239,11 @@ pub unsafe fn GetTime64() -> usize {
 }
 
 pub unsafe fn newTransactionWithDuration(
-    mut type_: String,
-    mut name: String,
-    mut duration: usize,
+    type_: String,
+    name: String,
+    duration: usize,
 ) -> *mut CatTransaction {
-    let mut trans: *mut _CatTransaction = newTransaction(type_, name);
+    let trans: *mut _CatTransaction = newTransaction(type_, name);
     ((*trans).setDurationInMillis)(trans, duration);
     if duration < (60i32 * 1000i32) as (usize) {
         ((*trans).setTimestamp)(trans, GetTime64().wrapping_sub(duration));
@@ -259,12 +251,8 @@ pub unsafe fn newTransactionWithDuration(
     trans
 }
 
-pub unsafe fn newCompletedTransactionWithDuration(
-    mut type_: String,
-    mut name: String,
-    mut duration: usize,
-) {
-    let mut trans: *mut _CatTransaction = newTransactionWithDuration(type_, name, duration);
+pub unsafe fn newCompletedTransactionWithDuration(type_: String, name: String, duration: usize) {
+    let trans: *mut _CatTransaction = newTransactionWithDuration(type_, name, duration);
     ((*trans).complete)(trans);
 }
 

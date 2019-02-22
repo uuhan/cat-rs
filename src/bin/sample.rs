@@ -11,7 +11,7 @@ pub fn main() {
     let mut cat = CatClient::new("test");
     cat.init();
     let version = cat.version();
-    let mut tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
+    let tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
     unsafe {
         (*tr).complete();
         catClientDestroy();

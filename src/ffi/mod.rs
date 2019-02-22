@@ -23,7 +23,7 @@ static mut DEFAULT_CCAT_CONFIG: _CatClientConfig = _CatClientConfig {
     enableHeartbeat: 1i32,
     enableSampling: 1i32,
     enableMultiprocessing: 0i32,
-    enableDebugLog: 0i32,
+    enableDebugLog: 1i32,
 };
 
 #[macro_export]
@@ -509,8 +509,8 @@ impl Clone for _CatTransaction {
 pub type CatTransaction = _CatTransaction;
 
 impl CatTransaction {
-    pub fn new(r#type: String, name: String) -> Self {
-        unsafe { *newTransaction(c!(r#type), c!(name)) }
+    pub fn new(r#type: String, name: String) -> *mut Self {
+        unsafe { newTransaction(c!(r#type), c!(name)) }
     }
 
     pub fn add_data(&mut self, data: String) -> &Self {

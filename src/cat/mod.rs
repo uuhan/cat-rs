@@ -19,7 +19,7 @@ impl CatClient {
             Some(mut config) => unsafe {
                 let appkey = c!(self.appkey.clone());
                 info!("cat client <{}> init with config: {}", self.appkey, config);
-                let rc = catClientInitWithConfig(appkey, &mut config);
+                let rc = catClientInitWithConfig(b"test\0".as_ptr() as *const u8, &mut config);
                 if rc != 0 {
                     info!("success!")
                 } else {
@@ -32,7 +32,7 @@ impl CatClient {
                     "cat client <{}> init with config: {}",
                     self.appkey, &self.config
                 );
-                let rc = catClientInitWithConfig(appkey, &mut self.config);
+                let rc = catClientInitWithConfig(b"test\0".as_ptr() as *const u8, &mut self.config);
                 if rc != 0 {
                     info!("success!")
                 } else {

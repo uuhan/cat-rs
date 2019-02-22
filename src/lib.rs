@@ -15,16 +15,6 @@ pub fn cat_version() -> String {
     ffi::catVersion().to_owned()
 }
 
-pub fn is_cat_enabled() -> bool {
-    let rc = unsafe { ffi::isCatEnabled() };
-
-    if rc != 0 {
-        true
-    } else {
-        false
-    }
-}
-
 pub fn cat_client_init(appkey: String) -> i32 {
     unsafe { ffi::catClientInit(c!(appkey)) }
 }

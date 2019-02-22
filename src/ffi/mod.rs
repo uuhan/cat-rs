@@ -87,7 +87,6 @@ extern "C" {
     fn initCatServerConnManager() -> i32;
     fn initMessageIdHelper();
     fn initMessageManager(domain: *const u8, hostName: *const u8);
-    pub fn isCatEnabled() -> i32;
     fn loadCatClientConfig(filename: *const u8) -> i32;
 }
 
@@ -95,79 +94,84 @@ pub fn catVersion() -> &'static str {
     "3.0.1"
 }
 
+#[inline]
+pub fn isCatEnabled() -> bool {
+    unsafe { g_cat_enabledFlag != 0 }
+}
+
 pub unsafe fn createMessageId() -> *mut u8 {
-    if isCatEnabled() == 0 {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-    } else {
+    if isCatEnabled() {
         getNextMessageId()
+    } else {
+        ptr::null_mut()
     }
 }
 
 pub unsafe fn createRemoteServerMessageId(mut appkey: *const u8) -> *mut u8 {
-    if isCatEnabled() == 0 {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-    } else {
+    if isCatEnabled() {
         getNextMessageIdByAppkey(appkey)
+    } else {
+        ptr::null_mut()
     }
 }
 
 pub unsafe fn getThreadLocalMessageTreeId() -> *mut u8 {
-    if isCatEnabled() == 0 {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-    } else {
+    if isCatEnabled() {
         (*getContextMessageTree()).messageId
+    } else {
+        ptr::null_mut()
     }
 }
 
 pub unsafe fn getThreadLocalMessageTreeRootId() -> *mut u8 {
-    if isCatEnabled() == 0 {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-    } else {
+    if isCatEnabled() {
         (*getContextMessageTree()).rootMessageId
+    } else {
+        ptr::null_mut()
     }
 }
 
 pub unsafe fn getThreadLocalMessageTreeParentId() -> *mut u8 {
-    if isCatEnabled() == 0 {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-    } else {
+    if isCatEnabled() {
         (*getContextMessageTree()).parentMessageId
+    } else {
+        ptr::null_mut()
     }
 }
 
 pub unsafe fn setThreadLocalMessageTreeId(mut messageId: *mut u8) {
-    if isCatEnabled() == 0 {
-    } else {
+    if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
         if (*pTree).messageId != 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
             catsdsfree((*pTree).messageId);
             (*pTree).messageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
         }
         (*pTree).messageId = catsdsnew(messageId as (*const u8));
+    } else {
     }
 }
 
 pub unsafe fn setThreadLocalMessageTreeRootId(mut messageId: *mut u8) {
-    if isCatEnabled() == 0 {
-    } else {
+    if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
         if (*pTree).rootMessageId != 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
             catsdsfree((*pTree).rootMessageId);
             (*pTree).rootMessageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
         }
         (*pTree).rootMessageId = catsdsnew(messageId as (*const u8));
+    } else {
     }
 }
 
 pub unsafe fn setThreadLocalMessageTreeParentId(mut messageId: *mut u8) {
-    if isCatEnabled() == 0 {
-    } else {
+    if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
         if (*pTree).parentMessageId != 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
             catsdsfree((*pTree).parentMessageId);
             (*pTree).parentMessageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
         }
         (*pTree).parentMessageId = catsdsnew(messageId as (*const u8));
+    } else {
     }
 }
 
@@ -182,48 +186,30 @@ pub unsafe fn catClientInitWithConfig(
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
         (if loadCatClientConfig((*b"/data/appdatas/cat/client.xml\0").as_ptr()) < 0i32 {
-            g_cat_init = 0i32;
-            g_cat_enabledFlag = 0i32;
-            CLogLogWithLocation(
-                0x8u16,
-                (*b"Failed to initialize cat: Error occurred while loading client config.\0")
-                    .as_ptr(),
-                file!().as_ptr(),
-                line!() as (i32),
-                (*b"catClientInitWithConfig\0").as_ptr(),
-            );
-            0i32
+            g_cat_init = 0;
+            g_cat_enabledFlag = 0;
+            error!("Failed to initialize cat: Error occurred while loading client config.");
+            0
         } else {
             g_config.appkey = catsdsnew(appkey);
-            initMessageManager(appkey, g_config.selfHost as (*const u8));
+            initMessageManager(appkey, g_config.selfHost);
             initMessageIdHelper();
-            (if initCatServerConnManager() == 0 {
+            if initCatServerConnManager() == 0 {
                 g_cat_init = 0i32;
                 g_cat_enabledFlag = 0i32;
-                CLogLogWithLocation(
-                    0x8u16,
-                    (*b"Failed to initialize cat: Error occurred while getting router from remote server.\0").as_ptr(
-                    ),
-                    file!().as_ptr(),
-                    line!() as (i32),
-                    (*b"catClientInitWithConfig\0").as_ptr()
-                );
-                0i32
+                error!("Failed to initialize cat: Error occurred while getting router from remote server.");
+                0
             } else {
                 initCatAggregatorThread();
                 initCatSenderThread();
                 initCatMonitorThread();
-                g_cat_enabledFlag = 1i32;
-                CLogLogWithLocation(
-                    0x2u16,
-                    (*b"Cat has been successfully initialized with appkey: %s\0").as_ptr(),
-                    file!().as_ptr(),
-                    line!() as (i32),
-                    (*b"catClientInitWithConfig\0").as_ptr(),
-                    appkey,
+                g_cat_enabledFlag = 1;
+                info!(
+                    "Cat has been successfully initialized with appkey: {}",
+                    CStr::from_ptr(appkey as *const i8).to_str().unwrap()
                 );
-                1i32
-            })
+                1
+            }
         })
     }
 }
@@ -246,9 +232,7 @@ pub unsafe fn catClientDestroy() -> i32 {
 }
 
 pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction {
-    if isCatEnabled() == 0 {
-        &mut g_cat_nullTrans as (*mut _CatTransaction)
-    } else {
+    if isCatEnabled() {
         let trans: *mut _CatTransaction = createCatTransaction(c!(type_), c!(name));
         if trans.is_null() {
             ptr::null_mut()
@@ -256,6 +240,8 @@ pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction
             catMessageManagerStartTrans(trans);
             trans
         }
+    } else {
+        &mut g_cat_nullTrans as (*mut _CatTransaction)
     }
 }
 
@@ -290,12 +276,12 @@ pub unsafe fn newCompletedTransactionWithDuration(
 }
 
 pub unsafe fn newHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut _CatMessage {
-    if isCatEnabled() == 0 {
-        &mut g_cat_nullMsg as (*mut _CatMessage)
-    } else {
+    if isCatEnabled() {
         (*getContextMessageTree()).canDiscard = 0i32;
         let mut hb: *mut _CatMessage = createCatHeartBeat(type_, name);
         hb
+    } else {
+        &mut g_cat_nullMsg as (*mut _CatMessage)
     }
 }
 
@@ -332,11 +318,11 @@ pub unsafe fn logError(mut msg: *const u8, mut errStr: *const u8) {
 }
 
 pub unsafe fn newEvent(mut type_: *const u8, mut name: *const u8) -> *mut _CatMessage {
-    if isCatEnabled() == 0 {
-        &mut g_cat_nullMsg as (*mut _CatMessage)
-    } else {
+    if isCatEnabled() {
         let mut event: *mut _CatMessage = createCatEvent(type_, name);
         event
+    } else {
+        &mut g_cat_nullMsg as (*mut _CatMessage)
     }
 }
 
@@ -346,8 +332,7 @@ pub unsafe fn logEvent(
     mut status: *const u8,
     mut data: *const u8,
 ) {
-    if isCatEnabled() == 0 {
-    } else {
+    if isCatEnabled() {
         let mut event: *mut _CatMessage = newEvent(type_, name);
         (if event == 0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatMessage) {
         } else {
@@ -357,15 +342,16 @@ pub unsafe fn logEvent(
             ((*event).setStatus)(event, status);
             ((*event).complete)(event);
         })
+    } else {
     }
 }
 
 pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut _CatMessage {
-    if isCatEnabled() == 0 {
-        &mut g_cat_nullMsg as (*mut _CatMessage)
-    } else {
+    if isCatEnabled() {
         let mut metric: *mut _CatMessage = createCatMetric(type_, name);
         metric
+    } else {
+        &mut g_cat_nullMsg as (*mut _CatMessage)
     }
 }
 
@@ -379,7 +365,7 @@ pub unsafe fn _logMetric(mut name: *const u8, mut status: *const u8, mut value: 
 }
 
 pub unsafe fn logMetricForCount(mut name: *const u8, mut quantity: i32) {
-    if isCatEnabled() == 0 {
+    if !isCatEnabled() {
     } else if g_config.enableSampling != 0 {
         addCountMetricToAggregator(name, quantity);
     } else if quantity == 1i32 {
@@ -392,7 +378,7 @@ pub unsafe fn logMetricForCount(mut name: *const u8, mut quantity: i32) {
 }
 
 pub unsafe fn logMetricForDuration(mut name: *const u8, mut duration: usize) {
-    if isCatEnabled() == 0 {
+    if !isCatEnabled() {
     } else if g_config.enableSampling != 0 {
         addDurationMetricToAggregator(name, duration as (i32));
     } else {

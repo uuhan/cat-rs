@@ -241,7 +241,7 @@ pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction
             trans
         }
     } else {
-        &mut g_cat_nullTrans as (*mut _CatTransaction)
+        &mut CatTransaction::default()
     }
 }
 
@@ -453,6 +453,12 @@ pub struct _CatTransaction {
 impl Clone for _CatTransaction {
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl Default for _CatTransaction {
+    fn default() -> Self {
+        unsafe { g_cat_nullTrans }
     }
 }
 

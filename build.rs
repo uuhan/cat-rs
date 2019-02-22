@@ -41,5 +41,4 @@ fn main() {
         .file("ccat/ccat/server_connection_manager.c")
         .file("ccat/ccat/transaction.c")
         .compile("ccat");
-    println!("cargo:rustc-link-lib=static=ccat");
 }

@@ -142,7 +142,7 @@ pub unsafe fn getThreadLocalMessageTreeParentId() -> *mut u8 {
 pub unsafe fn setThreadLocalMessageTreeId(mut messageId: *mut u8) {
     if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
-        if (*pTree).messageId != 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
+        if !(*pTree).messageId.is_null() {
             catsdsfree((*pTree).messageId);
             (*pTree).messageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
         }
@@ -154,9 +154,9 @@ pub unsafe fn setThreadLocalMessageTreeId(mut messageId: *mut u8) {
 pub unsafe fn setThreadLocalMessageTreeRootId(mut messageId: *mut u8) {
     if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
-        if (*pTree).rootMessageId != 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
+        if !(*pTree).rootMessageId.is_null() {
             catsdsfree((*pTree).rootMessageId);
-            (*pTree).rootMessageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
+            (*pTree).rootMessageId = ptr::null_mut();
         }
         (*pTree).rootMessageId = catsdsnew(messageId as (*const u8));
     } else {
@@ -166,9 +166,9 @@ pub unsafe fn setThreadLocalMessageTreeRootId(mut messageId: *mut u8) {
 pub unsafe fn setThreadLocalMessageTreeParentId(mut messageId: *mut u8) {
     if isCatEnabled() {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
-        if (*pTree).parentMessageId != 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
+        if !(*pTree).parentMessageId.is_null() {
             catsdsfree((*pTree).parentMessageId);
-            (*pTree).parentMessageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
+            (*pTree).parentMessageId = ptr::null_mut();
         }
         (*pTree).parentMessageId = catsdsnew(messageId as (*const u8));
     } else {
@@ -248,7 +248,7 @@ pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction
 pub unsafe fn GetTime64() -> usize {
     let mut buf: usize;
     let mut tv: timeval = mem::uninitialized();
-    gettimeofday(&mut tv, 0i32 as (*mut ::std::os::raw::c_void));
+    gettimeofday(&mut tv, ptr::null_mut());
     buf = (tv.tv_sec * 1000i64 + (tv.tv_usec / 1000i32) as (i64)) as (usize);
     buf
 }
@@ -334,14 +334,14 @@ pub unsafe fn logEvent(
 ) {
     if isCatEnabled() {
         let mut event: *mut _CatMessage = newEvent(type_, name);
-        (if event == 0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatMessage) {
-        } else {
-            if data != 0i32 as (*mut ::std::os::raw::c_void) as (*const u8) {
+        if !event.is_null() {
+            if !data.is_null() {
                 ((*event).addData)(event, data);
             }
             ((*event).setStatus)(event, status);
             ((*event).complete)(event);
-        })
+        } else {
+        }
     } else {
     }
 }
@@ -357,7 +357,7 @@ pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut _CatM
 
 pub unsafe fn _logMetric(mut name: *const u8, mut status: *const u8, mut value: *const u8) {
     let mut metric: *mut _CatMessage = newMetric((*b"\0").as_ptr(), name);
-    if value != 0i32 as (*mut ::std::os::raw::c_void) as (*const u8) {
+    if !value.is_null() {
         ((*metric).addData)(metric, value);
     }
     ((*metric).setStatus)(metric, status);

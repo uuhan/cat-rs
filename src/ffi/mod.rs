@@ -3,8 +3,6 @@
 extern crate libc;
 mod client_config;
 
-use client_config::catChecktPtrWithName;
-
 use libc::{gettimeofday, sighandler_t, signal, timeval, SIGINT, SIGPIPE, SIG_IGN};
 
 use std::default::Default;
@@ -12,6 +10,7 @@ use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt::{self, Display};
 use std::mem;
+use std::ptr;
 
 type cstring = *const u8;
 
@@ -54,7 +53,6 @@ extern "C" {
     fn addCountMetricToAggregator(name: *const u8, count: i32);
     fn addDurationMetricToAggregator(name: *const u8, timeMs: i32);
 
-    // fn catChecktPtrWithName(ptr: *mut ::std::os::raw::c_void, ptrName: *mut u8);
     fn catMessageManagerDestroy();
     fn catMessageManagerStartTrans(trans: *mut _CatTransaction);
 
@@ -249,21 +247,17 @@ pub unsafe fn catClientDestroy() -> i32 {
     1i32
 }
 
-pub unsafe fn newTransaction(mut type_: *const u8, mut name: *const u8) -> *mut CatTransaction {
+pub unsafe fn newTransaction(mut type_: String, mut name: String) -> *mut CatTransaction {
     if isCatEnabled() == 0 {
         &mut g_cat_nullTrans as (*mut _CatTransaction)
     } else {
-        let mut trans: *mut _CatTransaction = createCatTransaction(type_, name);
-        catChecktPtrWithName(
-            trans as (*mut ::std::os::raw::c_void),
-            (*b"trans\0").as_ptr() as (*mut u8),
-        );
-        (if trans == 0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatTransaction) {
-            0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatTransaction)
+        let mut trans: *mut _CatTransaction = createCatTransaction(c!(type_), c!(name));
+        if trans.is_null() {
+            ptr::null_mut()
         } else {
             catMessageManagerStartTrans(trans);
             trans
-        })
+        }
     }
 }
 
@@ -276,8 +270,8 @@ pub unsafe fn GetTime64() -> usize {
 }
 
 pub unsafe fn newTransactionWithDuration(
-    mut type_: *const u8,
-    mut name: *const u8,
+    mut type_: String,
+    mut name: String,
     mut duration: usize,
 ) -> *mut CatTransaction {
     let mut trans: *mut _CatTransaction = newTransaction(type_, name);
@@ -289,8 +283,8 @@ pub unsafe fn newTransactionWithDuration(
 }
 
 pub unsafe fn newCompletedTransactionWithDuration(
-    mut type_: *const u8,
-    mut name: *const u8,
+    mut type_: String,
+    mut name: String,
     mut duration: usize,
 ) {
     let mut trans: *mut _CatTransaction = newTransactionWithDuration(type_, name, duration);
@@ -303,10 +297,6 @@ pub unsafe fn newHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut _C
     } else {
         (*getContextMessageTree()).canDiscard = 0i32;
         let mut hb: *mut _CatMessage = createCatHeartBeat(type_, name);
-        catChecktPtrWithName(
-            hb as (*mut ::std::os::raw::c_void),
-            (*b"hb\0").as_ptr() as (*mut u8),
-        );
         hb
     }
 }
@@ -348,10 +338,6 @@ pub unsafe fn newEvent(mut type_: *const u8, mut name: *const u8) -> *mut _CatMe
         &mut g_cat_nullMsg as (*mut _CatMessage)
     } else {
         let mut event: *mut _CatMessage = createCatEvent(type_, name);
-        catChecktPtrWithName(
-            event as (*mut ::std::os::raw::c_void),
-            (*b"event\0").as_ptr() as (*mut u8),
-        );
         event
     }
 }
@@ -365,10 +351,6 @@ pub unsafe fn logEvent(
     if isCatEnabled() == 0 {
     } else {
         let mut event: *mut _CatMessage = newEvent(type_, name);
-        catChecktPtrWithName(
-            event as (*mut ::std::os::raw::c_void),
-            (*b"event\0").as_ptr() as (*mut u8),
-        );
         (if event == 0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatMessage) {
         } else {
             if data != 0i32 as (*mut ::std::os::raw::c_void) as (*const u8) {
@@ -385,20 +367,12 @@ pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut _CatM
         &mut g_cat_nullMsg as (*mut _CatMessage)
     } else {
         let mut metric: *mut _CatMessage = createCatMetric(type_, name);
-        catChecktPtrWithName(
-            metric as (*mut ::std::os::raw::c_void),
-            (*b"metric\0").as_ptr() as (*mut u8),
-        );
         metric
     }
 }
 
 pub unsafe fn _logMetric(mut name: *const u8, mut status: *const u8, mut value: *const u8) {
     let mut metric: *mut _CatMessage = newMetric((*b"\0").as_ptr(), name);
-    catChecktPtrWithName(
-        metric as (*mut ::std::os::raw::c_void),
-        (*b"metric\0").as_ptr() as (*mut u8),
-    );
     if value != 0i32 as (*mut ::std::os::raw::c_void) as (*const u8) {
         ((*metric).addData)(metric, value);
     }
@@ -414,10 +388,6 @@ pub unsafe fn logMetricForCount(mut name: *const u8, mut quantity: i32) {
         _logMetric(name, (*b"C\0").as_ptr(), (*b"1\0").as_ptr());
     } else {
         let mut val: *mut u8 = catsdsfromlonglong(quantity as (isize));
-        catChecktPtrWithName(
-            val as (*mut ::std::os::raw::c_void),
-            (*b"val\0").as_ptr() as (*mut u8),
-        );
         _logMetric(name, (*b"C\0").as_ptr(), val as (*const u8));
         catsdsfree(val);
     }
@@ -429,10 +399,6 @@ pub unsafe fn logMetricForDuration(mut name: *const u8, mut duration: usize) {
         addDurationMetricToAggregator(name, duration as (i32));
     } else {
         let mut val: *mut u8 = catsdsfromlonglong(duration as (isize));
-        catChecktPtrWithName(
-            val as (*mut ::std::os::raw::c_void),
-            (*b"val\0").as_ptr() as (*mut u8),
-        );
         _logMetric(name, (*b"T\0").as_ptr(), val as (*const u8));
         catsdsfree(val);
     }
@@ -510,7 +476,7 @@ pub type CatTransaction = _CatTransaction;
 
 impl CatTransaction {
     pub fn new(r#type: String, name: String) -> *mut Self {
-        unsafe { newTransaction(c!(r#type), c!(name)) }
+        unsafe { newTransaction(r#type, name) }
     }
 
     pub fn add_data(&mut self, data: String) -> &Self {

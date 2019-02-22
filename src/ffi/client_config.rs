@@ -150,24 +150,6 @@ pub static mut g_config: _CatClientInnerConfig = _CatClientInnerConfig {
 pub static mut g_cat_enabledFlag: i32 = 0i32;
 
 #[no_mangle]
-pub unsafe extern "C" fn catChecktPtrWithName(
-    mut ptr: *mut ::std::os::raw::c_void,
-    mut ptrName: *mut u8,
-) {
-    if ptr == 0i32 as (*mut ::std::os::raw::c_void) {
-        CLogLogWithLocation(
-            0x8u16,
-            (*b"memory allocation failed. (oom).\0").as_ptr(),
-            file!().as_ptr(),
-            line!() as (i32),
-            (*b"catChecktPtrWithName\0").as_ptr(),
-            ptrName,
-        );
-        logError((*b"Error\0").as_ptr(), (*b"OutOfMemory\0").as_ptr());
-    }
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn isCatEnabled() -> i32 {
     g_cat_enabledFlag
 }

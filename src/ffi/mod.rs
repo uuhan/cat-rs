@@ -5,9 +5,7 @@ mod client_config;
 
 use client_config::catChecktPtrWithName;
 
-use libc::{
-    c_int, c_ulong, c_void, gettimeofday, sighandler_t, signal, timeval, SIGINT, SIGPIPE, SIG_IGN,
-};
+use libc::{gettimeofday, sighandler_t, signal, timeval, SIGINT, SIGPIPE, SIG_IGN};
 
 use std::default::Default;
 use std::ffi::CStr;
@@ -32,6 +30,9 @@ static mut DEFAULT_CCAT_CONFIG: _CatClientConfig = _CatClientConfig {
 macro_rules! c {
     ($data:ident) => {
         CString::new($data).unwrap().as_ptr() as *const u8
+    };
+    ($expr:expr) => {
+        CString::new($expr).unwrap().as_ptr() as *const u8
     };
 }
 
@@ -92,8 +93,8 @@ extern "C" {
     fn loadCatClientConfig(filename: *const u8) -> i32;
 }
 
-pub fn catVersion() -> *const u8 {
-    (*b"3.0.1\0").as_ptr()
+pub fn catVersion() -> &'static str {
+    "3.0.1"
 }
 
 pub unsafe fn createMessageId() -> *mut u8 {
@@ -549,65 +550,6 @@ impl CatTransaction {
     pub fn set_duration_start(&mut self, durationStart: usize) -> &Self {
         unsafe { (self.setDurationStart)(self, durationStart) };
         self
-    }
-}
-
-pub struct CatClient {
-    appkey: String,
-    config: CatClientConfig,
-}
-
-impl CatClient {
-    pub fn new(appkey: String) -> Self {
-        CatClient {
-            appkey,
-            config: CatClientConfig::default(),
-        }
-    }
-
-    pub fn init(&mut self, config: Option<CatClientConfig>) -> &Self {
-        match config {
-            Some(mut config) => unsafe {
-                let appkey = CString::new(self.appkey.clone()).unwrap().as_ptr() as *mut u8;
-                info!("cat client <{}> init with config: {}", self.appkey, config);
-                let rc = catClientInitWithConfig(appkey, &mut config);
-                if rc != 0 {
-                    info!("success!")
-                } else {
-                    error!("failed!")
-                }
-            },
-            None => unsafe {
-                let appkey = CString::new(self.appkey.clone()).unwrap().as_ptr() as *mut u8;
-                info!(
-                    "cat client <{}> init with config: {}",
-                    self.appkey, &self.config
-                );
-                let rc = catClientInitWithConfig(appkey, &mut self.config);
-                if rc != 0 {
-                    info!("success!")
-                } else {
-                    error!("failed!")
-                }
-            },
-        }
-
-        self
-    }
-
-    pub fn destroy(&self) {
-        warn!("cat client is being destroyed!");
-        let rc = unsafe { catClientDestroy() };
-        if rc != 0 {
-            warn!("cat is destroyed successfully!")
-        } else {
-            error!("cat is destroyed failed!")
-        }
-    }
-
-    pub fn version(&self) -> &str {
-        let version = unsafe { CStr::from_ptr(catVersion() as *const i8) };
-        version.to_str().unwrap()
     }
 }
 

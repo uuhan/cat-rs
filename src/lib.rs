@@ -1,23 +1,18 @@
 extern crate libc;
 #[macro_use]
 extern crate log;
-use std::ffi::CStr;
 use std::ffi::CString;
 
-mod ffi;
+#[macro_use]
+pub(crate) mod ffi;
+pub mod cat;
 
-/// re-export struct from mod ffi
-pub use ffi::{
-    CatClient, CatClientConfig, CatEvent, CatHeartBeat, CatMessage, CatMetric, CatTransaction,
-};
+/// re-export struct
+pub use cat::CatClient;
+pub use ffi::CatTransaction;
 
 pub fn cat_version() -> String {
-    let r = unsafe {
-        let t = ffi::catVersion();
-        CStr::from_ptr(t as *mut i8).to_str().unwrap()
-    };
-
-    r.to_owned()
+    ffi::catVersion().to_owned()
 }
 
 pub fn is_cat_enabled() -> bool {

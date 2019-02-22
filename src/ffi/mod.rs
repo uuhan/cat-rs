@@ -195,8 +195,8 @@ pub unsafe fn catClientInitWithConfig(
             initMessageManager(appkey, g_config.selfHost);
             initMessageIdHelper();
             if initCatServerConnManager() == 0 {
-                g_cat_init = 0i32;
-                g_cat_enabledFlag = 0i32;
+                g_cat_init = 0;
+                g_cat_enabledFlag = 0;
                 error!("Failed to initialize cat: Error occurred while getting router from remote server.");
                 0
             } else {
@@ -219,8 +219,8 @@ pub unsafe fn catClientInit(mut appkey: *const u8) -> i32 {
 }
 
 pub unsafe fn catClientDestroy() -> i32 {
-    g_cat_enabledFlag = 0i32;
-    g_cat_init = 0i32;
+    g_cat_enabledFlag = 0;
+    g_cat_init = 0;
     clearCatMonitor();
     catMessageManagerDestroy();
     clearCatAggregatorThread();
@@ -228,7 +228,7 @@ pub unsafe fn catClientDestroy() -> i32 {
     clearCatServerConnManager();
     destroyMessageIdHelper();
     clearCatClientConfig();
-    1i32
+    1
 }
 
 pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction {
@@ -281,7 +281,7 @@ pub unsafe fn newHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut _C
         let mut hb: *mut _CatMessage = createCatHeartBeat(type_, name);
         hb
     } else {
-        &mut g_cat_nullMsg as (*mut _CatMessage)
+        &mut CatMessage::default()
     }
 }
 
@@ -322,7 +322,7 @@ pub unsafe fn newEvent(mut type_: *const u8, mut name: *const u8) -> *mut _CatMe
         let mut event: *mut _CatMessage = createCatEvent(type_, name);
         event
     } else {
-        &mut g_cat_nullMsg as (*mut _CatMessage)
+        &mut CatMessage::default()
     }
 }
 
@@ -351,7 +351,7 @@ pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut _CatM
         let mut metric: *mut _CatMessage = createCatMetric(type_, name);
         metric
     } else {
-        &mut g_cat_nullMsg as (*mut _CatMessage)
+        &mut CatMessage::default()
     }
 }
 
@@ -401,6 +401,12 @@ pub struct _CatMessage {
 impl Clone for _CatMessage {
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl Default for _CatMessage {
+    fn default() -> Self {
+        unsafe { g_cat_nullMsg }
     }
 }
 

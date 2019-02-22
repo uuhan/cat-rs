@@ -9,6 +9,7 @@ pub mod cat;
 
 /// re-export struct
 pub use cat::CatClient;
+pub use ffi::logEvent;
 pub use ffi::CatTransaction;
 
 pub fn cat_version() -> String {

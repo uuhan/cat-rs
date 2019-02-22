@@ -42,3 +42,10 @@ impl<'a> CatClient<'a> {
         catVersion()
     }
 }
+
+impl<'a> Drop for CatClient<'a> {
+    fn drop(&mut self) {
+        warn!("cat client destroyed!");
+        self.destroy()
+    }
+}

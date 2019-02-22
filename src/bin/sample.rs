@@ -14,7 +14,6 @@ pub fn main() {
     let tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
     unsafe {
         (*tr).complete();
-        catClientDestroy();
     }
 
     println!("{}", version);

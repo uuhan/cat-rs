@@ -159,8 +159,7 @@ pub unsafe fn setThreadLocalMessageTreeRootId(mut messageId: *mut u8) {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn setThreadLocalMessageTreeParentId(mut messageId: *mut u8) {
+pub unsafe fn setThreadLocalMessageTreeParentId(mut messageId: *mut u8) {
     if isCatEnabled() == 0 {
     } else {
         let mut pTree: *mut _CatMessageTree = getContextMessageTree();
@@ -172,7 +171,6 @@ pub unsafe extern "C" fn setThreadLocalMessageTreeParentId(mut messageId: *mut u
     }
 }
 
-#[no_mangle]
 pub unsafe fn catClientInitWithConfig(
     mut appkey: *const u8,
     mut config: *mut _CatClientConfig,
@@ -247,11 +245,11 @@ pub unsafe fn catClientDestroy() -> i32 {
     1i32
 }
 
-pub unsafe fn newTransaction(mut type_: String, mut name: String) -> *mut CatTransaction {
+pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction {
     if isCatEnabled() == 0 {
         &mut g_cat_nullTrans as (*mut _CatTransaction)
     } else {
-        let mut trans: *mut _CatTransaction = createCatTransaction(c!(type_), c!(name));
+        let trans: *mut _CatTransaction = createCatTransaction(c!(type_), c!(name));
         if trans.is_null() {
             ptr::null_mut()
         } else {

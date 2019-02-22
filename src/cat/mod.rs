@@ -1,47 +1,37 @@
 use crate::ffi::*;
+use std::ffi::CStr;
 use std::ffi::CString;
 
-pub struct CatClient {
-    appkey: String,
+pub struct CatClient<'a> {
+    appkey: &'a str,
     config: CatClientConfig,
 }
 
-impl CatClient {
-    pub fn new(appkey: String) -> Self {
+impl<'a> CatClient<'a> {
+    pub fn new(appkey: &'a str) -> Self {
         CatClient {
             appkey,
             config: CatClientConfig::default(),
         }
     }
 
-    pub fn init(&mut self, config: Option<CatClientConfig>) -> &Self {
-        match config {
-            Some(mut config) => unsafe {
-                let appkey = c!(self.appkey.clone());
-                info!("cat client <{}> init with config: {}", self.appkey, config);
-                let rc = catClientInitWithConfig(b"test\0".as_ptr() as *const u8, &mut config);
-                if rc != 0 {
-                    info!("success!")
-                } else {
-                    error!("failed!")
-                }
-            },
-            None => unsafe {
-                let appkey = c!(self.appkey.clone());
-                info!(
-                    "cat client <{}> init with config: {}",
-                    self.appkey, &self.config
-                );
-                let rc = catClientInitWithConfig(b"test\0".as_ptr() as *const u8, &mut self.config);
-                if rc != 0 {
-                    info!("success!")
-                } else {
-                    error!("failed!")
-                }
-            },
-        }
-
+    pub fn config(&mut self, config: &mut CatClientConfig) -> &Self {
+        self.config = *config;
         self
+    }
+
+    pub fn init(&mut self) -> &Self {
+        unsafe {
+            info!(
+                "cat client <{}> init with config: {}",
+                self.appkey, self.config
+            );
+            let rc = catClientInitWithConfig(
+                CString::new(self.appkey).unwrap().as_ptr() as *const u8,
+                &mut self.config,
+            );
+            self
+        }
     }
 
     pub fn destroy(&self) {

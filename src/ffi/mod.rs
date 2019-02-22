@@ -17,14 +17,6 @@ type cstring = *const u8;
 /// cat static
 static mut g_cat_init: i32 = 0i32;
 
-static mut DEFAULT_CCAT_CONFIG: _CatClientConfig = _CatClientConfig {
-    encoderType: 1i32,
-    enableHeartbeat: 1i32,
-    enableSampling: 1i32,
-    enableMultiprocessing: 0i32,
-    enableDebugLog: 1i32,
-};
-
 #[macro_export]
 macro_rules! c {
     ($data:ident) => {
@@ -37,9 +29,6 @@ macro_rules! c {
 
 #[allow(dead_code)]
 extern "C" {
-    #[link_name = "DEFAULT_CCAT_CONFIG"]
-    static CCAT_CONFIG: CatClientConfig;
-
     fn CLogLogWithLocation(
         type_: u16,
         format: *const u8,
@@ -191,6 +180,10 @@ pub unsafe fn catClientInitWithConfig(
             error!("Failed to initialize cat: Error occurred while loading client config.");
             0
         } else {
+            println!(
+                "appkey: {}",
+                CStr::from_ptr(appkey as *const i8).to_str().unwrap()
+            );
             g_config.appkey = catsdsnew(appkey);
             initMessageManager(appkey, g_config.selfHost);
             initMessageIdHelper();
@@ -215,7 +208,7 @@ pub unsafe fn catClientInitWithConfig(
 }
 
 pub unsafe fn catClientInit(mut appkey: *const u8) -> i32 {
-    catClientInitWithConfig(appkey, &mut DEFAULT_CCAT_CONFIG as (*mut _CatClientConfig))
+    catClientInitWithConfig(appkey, &mut CatClientConfig::default())
 }
 
 pub unsafe fn catClientDestroy() -> i32 {
@@ -572,7 +565,13 @@ pub type CatClientConfig = _CatClientConfig;
 
 impl Default for CatClientConfig {
     fn default() -> Self {
-        unsafe { DEFAULT_CCAT_CONFIG }
+        _CatClientConfig {
+            encoderType: 1i32,
+            enableHeartbeat: 1i32,
+            enableSampling: 1i32,
+            enableMultiprocessing: 0i32,
+            enableDebugLog: 1i32,
+        }
     }
 }
 

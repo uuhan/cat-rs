@@ -1,13 +1,13 @@
 use crate::ffi::*;
 use std::ffi::CString;
 
-pub struct CatClient<'a> {
-    appkey: &'a str,
+pub struct CatClient {
+    appkey: String,
     config: CatClientConfig,
 }
 
-impl<'a> CatClient<'a> {
-    pub fn new(appkey: &'a str) -> Self {
+impl CatClient {
+    pub fn new(appkey: String) -> Self {
         CatClient {
             appkey,
             config: CatClientConfig::default(),
@@ -26,7 +26,7 @@ impl<'a> CatClient<'a> {
                 self.appkey, self.config
             );
             catClientInitWithConfig(
-                CString::new(self.appkey).unwrap().as_ptr() as *const u8,
+                CString::new(self.appkey.clone()).unwrap().as_ptr() as *const u8,
                 &mut self.config,
             );
             self
@@ -43,7 +43,7 @@ impl<'a> CatClient<'a> {
     }
 }
 
-impl<'a> Drop for CatClient<'a> {
+impl Drop for CatClient {
     fn drop(&mut self) {
         warn!("cat client destroyed!");
         self.destroy()

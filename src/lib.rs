@@ -34,9 +34,7 @@ mod tests {
     fn test_transaction() {
         let mut cat = CatClient::new("test");
         cat.init();
-        let version = cat.version();
         let tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
-
         assert!(!tr.is_null());
 
         unsafe {
@@ -52,7 +50,8 @@ mod tests {
                 b"1\0".as_ptr() as *const u8,
                 ptr::null(),
             );
-            (*tr).complete();
+
+            (*tr).complete()
         }
     }
 }

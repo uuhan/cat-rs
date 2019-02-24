@@ -452,8 +452,8 @@ impl Default for _CatTransaction {
 pub type CatTransaction = _CatTransaction;
 
 impl CatTransaction {
-    pub fn new(r#type: String, name: String) -> *mut Self {
-        unsafe { newTransaction(r#type, name) }
+    pub fn new<T: ToString>(r#type: T, name: T) -> *mut Self {
+        unsafe { newTransaction(r#type.to_string(), name.to_string()) }
     }
 
     pub fn add_data(&mut self, data: String) -> &Self {

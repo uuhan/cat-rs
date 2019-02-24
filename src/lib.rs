@@ -32,9 +32,9 @@ mod tests {
 
     #[test]
     fn test_transaction() {
-        let mut cat = CatClient::new("test".to_owned());
+        let mut cat = CatClient::new("test");
         cat.init();
-        let tr = CatTransaction::new("foo".to_owned(), "bar".to_owned());
+        let tr = CatTransaction::new("foo", "bar");
         assert!(!tr.is_null());
 
         unsafe {

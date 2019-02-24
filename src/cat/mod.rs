@@ -7,9 +7,9 @@ pub struct CatClient {
 }
 
 impl CatClient {
-    pub fn new(appkey: String) -> Self {
+    pub fn new<T: ToString>(appkey: T) -> Self {
         CatClient {
-            appkey,
+            appkey: appkey.to_string(),
             config: CatClientConfig::default(),
         }
     }

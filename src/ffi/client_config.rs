@@ -1,8 +1,7 @@
 use super::raw::CatClientConfig;
 use super::raw::CatClientInnerConfig;
-use libc::fopen;
-use libc::FILE;
 use std::ffi::CStr;
+use std::ffi::CString;
 use std::path::Path;
 use std::ptr::null_mut;
 
@@ -15,7 +14,7 @@ extern "C" {
     fn ezxml_attr(xml: *mut ezxml, attr: *const u8) -> *const u8;
     fn ezxml_child(xml: *mut ezxml, name: *const u8) -> *mut ezxml;
     fn ezxml_free(xml: *mut ezxml);
-    fn ezxml_parse_file(file: *const u8) -> *mut ezxml;
+    fn ezxml_parse_file(file: *const i8) -> *mut ezxml;
     fn free(arg1: *mut ::std::os::raw::c_void);
     static mut g_log_debug: i32;
     static mut g_log_file_perDay: i32;
@@ -127,19 +126,19 @@ pub unsafe fn parseCatClientConfig(mut f1: *mut ezxml) -> i32 {
     }
 }
 
-unsafe extern "C" fn getCatClientConfig(filename: *const u8) -> *mut ezxml {
-    if Path::new(CStr::from_ptr(filename as *const i8).to_str().unwrap()).exists() {
-        ezxml_parse_file(filename)
+unsafe fn getCatClientConfig(filename: &str) -> *mut ezxml {
+    if Path::new(filename).exists() {
+        ezxml_parse_file(CString::new(filename).unwrap().as_ptr())
     } else {
         null_mut()
     }
 }
 
-pub unsafe fn loadCatClientConfig(filename: *const u8) -> i32 {
+pub unsafe fn loadCatClientConfig(filename: &str) -> i32 {
     println!("test");
     let mut config: *mut ezxml = getCatClientConfig(filename);
     if config.is_null() {
-        // error!("File {} not exists.", filename);
+        error!("File {} not exists.", filename);
         error!("client.xml is required to initialize cat client!");
         -1
     } else if parseCatClientConfig(config) < 0i32 {

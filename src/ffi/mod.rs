@@ -172,7 +172,7 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut CatClientC
         G_CAT_INIT = 1i32;
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
-        (if loadCatClientConfig((*b"/data/appdatas/cat/client.xml\0").as_ptr()) < 0i32 {
+        (if loadCatClientConfig("/data/appdatas/cat/client.xml") < 0i32 {
             G_CAT_INIT = 0;
             g_cat_enabledFlag = 0;
             error!("Failed to initialize cat: Error occurred while loading client config.");

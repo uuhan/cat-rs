@@ -78,10 +78,6 @@ extern "C" {
     fn loadCatClientConfig(filename: *const u8) -> i32;
 }
 
-pub fn catVersion() -> &'static str {
-    "3.0.1"
-}
-
 #[inline]
 pub fn isCatEnabled() -> bool {
     unsafe { g_cat_enabledFlag != 0 }

@@ -1,3 +1,4 @@
+use crate::cat_version;
 use crate::ffi::*;
 use std::ffi::CString;
 
@@ -39,7 +40,7 @@ impl CatClient {
     }
 
     pub fn version(&self) -> &str {
-        catVersion()
+        cat_version()
     }
 }
 

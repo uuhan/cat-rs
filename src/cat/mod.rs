@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 use crate::cat_version;
+use crate::ffi::raw::*;
 use crate::ffi::*;
 use std::ffi::CString;
 

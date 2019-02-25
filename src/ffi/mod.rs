@@ -11,6 +11,12 @@ use std::fmt::{self, Display};
 use std::mem;
 use std::ptr;
 
+mod client_config;
+pub(crate) mod raw;
+
+use client_config::initCatClientConfig;
+use raw::CatClientConfig;
+
 type cstring = *const u8;
 
 /// cat static
@@ -69,7 +75,6 @@ extern "C" {
     fn getNextMessageId() -> *mut u8;
     fn getNextMessageIdByAppkey(domain: *const u8) -> *mut u8;
     fn initCatAggregatorThread();
-    fn initCatClientConfig(config: *mut _CatClientConfig);
     fn initCatMonitorThread();
     fn initCatSenderThread();
     fn initCatServerConnManager() -> i32;
@@ -159,7 +164,7 @@ pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
     }
 }
 
-pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut _CatClientConfig) -> i32 {
+pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut CatClientConfig) -> i32 {
     if G_CAT_INIT != 0 {
         0i32
     } else {
@@ -494,22 +499,6 @@ impl CatTransaction {
 
 #[derive(Copy)]
 #[repr(C)]
-pub struct _CatClientConfig {
-    pub encoderType: i32,
-    pub enableHeartbeat: i32,
-    pub enableSampling: i32,
-    pub enableMultiprocessing: i32,
-    pub enableDebugLog: i32,
-}
-
-impl Clone for _CatClientConfig {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[derive(Copy)]
-#[repr(C)]
 pub struct _CatClientInnerConfig {
     pub appkey: *mut u8,
     pub selfHost: *mut u8,
@@ -542,25 +531,5 @@ pub struct _CatClientInnerConfig {
 impl Clone for _CatClientInnerConfig {
     fn clone(&self) -> Self {
         *self
-    }
-}
-
-pub type CatClientConfig = _CatClientConfig;
-
-impl Default for CatClientConfig {
-    fn default() -> Self {
-        _CatClientConfig {
-            encoderType: 1i32,
-            enableHeartbeat: 0i32,
-            enableSampling: 1i32,
-            enableMultiprocessing: 0i32,
-            enableDebugLog: 0i32,
-        }
-    }
-}
-
-impl Display for CatClientConfig {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
     }
 }

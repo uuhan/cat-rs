@@ -1,3 +1,5 @@
+use super::raw::CatClientConfig;
+
 extern "C" {
     fn CLogLogWithLocation(
         type_: u16,
@@ -146,14 +148,6 @@ pub static mut g_config: _CatClientInnerConfig = _CatClientInnerConfig {
     enableMultiprocessing: 0i32,
 };
 
-#[no_mangle]
-pub static mut g_cat_enabledFlag: i32 = 0i32;
-
-#[no_mangle]
-pub unsafe extern "C" fn isCatEnabled() -> i32 {
-    g_cat_enabledFlag
-}
-
 #[derive(Copy)]
 #[repr(C)]
 pub struct ezxml {
@@ -175,8 +169,7 @@ impl Clone for ezxml {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn parseCatClientConfig(mut f1: *mut ezxml) -> i32 {
+pub unsafe fn parseCatClientConfig(mut f1: *mut ezxml) -> i32 {
     let mut serverIndex: i32 = 0i32;
     let mut servers: *mut ezxml;
     let mut server: *mut ezxml;
@@ -228,8 +221,7 @@ unsafe extern "C" fn getCatClientConfig(mut filename: *const u8) -> *mut ezxml {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn loadCatClientConfig(mut filename: *const u8) -> i32 {
+pub unsafe fn loadCatClientConfig(mut filename: *const u8) -> i32 {
     let mut config: *mut ezxml = getCatClientConfig(filename);
     if 0i32 as (*mut ::std::os::raw::c_void) as (*mut ezxml) == config {
         CLogLogWithLocation(
@@ -262,24 +254,7 @@ pub unsafe extern "C" fn loadCatClientConfig(mut filename: *const u8) -> i32 {
     }
 }
 
-#[derive(Copy)]
-#[repr(C)]
-pub struct _CatClientConfig {
-    pub encoderType: i32,
-    pub enableHeartbeat: i32,
-    pub enableSampling: i32,
-    pub enableMultiprocessing: i32,
-    pub enableDebugLog: i32,
-}
-
-impl Clone for _CatClientConfig {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn initCatClientConfig(mut config: *mut _CatClientConfig) {
+pub unsafe fn initCatClientConfig(mut config: *mut CatClientConfig) {
     memset(
         &mut g_config as (*mut _CatClientInnerConfig) as (*mut ::std::os::raw::c_void),
         0i32,
@@ -362,8 +337,7 @@ pub unsafe extern "C" fn initCatClientConfig(mut config: *mut _CatClientConfig) 
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn clearCatClientConfig() {
+pub unsafe fn clearCatClientConfig() {
     catsdsfree(g_config.appkey);
     catsdsfree(g_config.selfHost);
     catsdsfree(g_config.defaultIp);

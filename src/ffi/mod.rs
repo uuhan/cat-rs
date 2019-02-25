@@ -555,10 +555,10 @@ impl Default for CatClientConfig {
     fn default() -> Self {
         _CatClientConfig {
             encoderType: 1i32,
-            enableHeartbeat: 1i32,
+            enableHeartbeat: 0i32,
             enableSampling: 1i32,
             enableMultiprocessing: 0i32,
-            enableDebugLog: 1i32,
+            enableDebugLog: 0i32,
         }
     }
 }

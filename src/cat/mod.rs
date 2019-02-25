@@ -22,11 +22,11 @@ impl CatClient {
     }
 
     pub fn init(&mut self) -> &Self {
+        info!(
+            "cat client <{}> init with config: {}",
+            self.appkey, self.config
+        );
         unsafe {
-            info!(
-                "cat client <{}> init with config: {}",
-                self.appkey, self.config
-            );
             catClientInitWithConfig(
                 CString::new(self.appkey.clone()).unwrap().as_ptr() as *const u8,
                 &mut self.config,

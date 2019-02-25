@@ -196,16 +196,20 @@ pub unsafe fn catClientInit(appkey: *const u8) -> i32 {
 }
 
 pub unsafe fn catClientDestroy() -> i32 {
-    g_cat_enabledFlag = 0;
-    G_CAT_INIT = 0;
-    clearCatMonitor();
-    catMessageManagerDestroy();
-    clearCatAggregatorThread();
-    clearCatSenderThread();
-    clearCatServerConnManager();
-    destroyMessageIdHelper();
-    clearCatClientConfig();
-    1
+    if g_cat_enabledFlag != 0 {
+        g_cat_enabledFlag = 0;
+        G_CAT_INIT = 0;
+        clearCatMonitor();
+        catMessageManagerDestroy();
+        clearCatAggregatorThread();
+        clearCatSenderThread();
+        clearCatServerConnManager();
+        destroyMessageIdHelper();
+        clearCatClientConfig();
+        1
+    } else {
+        1
+    }
 }
 
 pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction {

@@ -12,6 +12,7 @@ use std::mem;
 use std::ptr;
 
 mod client_config;
+pub mod config;
 pub(crate) mod raw;
 
 use client_config::initCatClientConfig;

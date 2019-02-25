@@ -15,6 +15,7 @@ mod client_config;
 pub(crate) mod raw;
 
 use client_config::initCatClientConfig;
+use client_config::loadCatClientConfig;
 use raw::CatClientConfig;
 use raw::CatClientInnerConfig;
 
@@ -81,7 +82,6 @@ extern "C" {
     fn initCatServerConnManager() -> i32;
     fn initMessageIdHelper();
     fn initMessageManager(domain: *const u8, hostName: *const u8);
-    fn loadCatClientConfig(filename: *const u8) -> i32;
 }
 
 #[inline]

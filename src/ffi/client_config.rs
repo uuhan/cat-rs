@@ -1,16 +1,12 @@
 use super::raw::CatClientConfig;
 use super::raw::CatClientInnerConfig;
+use libc::fopen;
+use libc::FILE;
+use std::ffi::CStr;
+use std::path::Path;
+use std::ptr::null_mut;
 
 extern "C" {
-    fn CLogLogWithLocation(
-        type_: u16,
-        format: *const u8,
-        file: *const u8,
-        line: i32,
-        function: *const u8,
-        ...
-    );
-    fn atoi(arg1: *const u8) -> i32;
     fn catAnetGetHost(err: *mut u8, host: *mut u8, ipbuf_len: usize) -> i32;
     fn catsdscpy(s: *mut u8, t: *const u8) -> *mut u8;
     fn catsdsfree(s: *mut u8);
@@ -20,7 +16,6 @@ extern "C" {
     fn ezxml_child(xml: *mut ezxml, name: *const u8) -> *mut ezxml;
     fn ezxml_free(xml: *mut ezxml);
     fn ezxml_parse_file(file: *const u8) -> *mut ezxml;
-    fn fopen(__filename: *const u8, __mode: *const u8) -> *mut __sFILE;
     fn free(arg1: *mut ::std::os::raw::c_void);
     static mut g_log_debug: i32;
     static mut g_log_file_perDay: i32;
@@ -34,52 +29,7 @@ extern "C" {
         __c: i32,
         __len: usize,
     ) -> *mut ::std::os::raw::c_void;
-}
-
-pub enum __sFILEX {}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct __sbuf {
-    pub _base: *mut u8,
-    pub _size: i32,
-}
-
-impl Clone for __sbuf {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct __sFILE {
-    pub _p: *mut u8,
-    pub _r: i32,
-    pub _w: i32,
-    pub _flags: i16,
-    pub _file: i16,
-    pub _bf: __sbuf,
-    pub _lbfsize: i32,
-    pub _cookie: *mut ::std::os::raw::c_void,
-    pub _close: unsafe extern "C" fn(*mut ::std::os::raw::c_void) -> i32,
-    pub _read: unsafe extern "C" fn(*mut ::std::os::raw::c_void, *mut u8, i32) -> i32,
-    pub _seek: unsafe extern "C" fn(*mut ::std::os::raw::c_void, isize, i32) -> isize,
-    pub _write: unsafe extern "C" fn(*mut ::std::os::raw::c_void, *const u8, i32) -> i32,
-    pub _ub: __sbuf,
-    pub _extra: *mut __sFILEX,
-    pub _ur: i32,
-    pub _ubuf: [u8; 3],
-    pub _nbuf: [u8; 1],
-    pub _lb: __sbuf,
-    pub _blksize: i32,
-    pub _offset: isize,
-}
-
-impl Clone for __sFILE {
-    fn clone(&self) -> Self {
-        *self
-    }
+// pub fn loadCatClientConfig(filename: *const u8) -> i32;
 }
 
 #[no_mangle]
@@ -157,7 +107,8 @@ pub unsafe fn parseCatClientConfig(mut f1: *mut ezxml) -> i32 {
                     g_config.serverHost = catsdsnew(ip);
                     port = ezxml_attr(server, (*b"http-port\0").as_ptr());
                     if !port.is_null() && (*port.offset(0isize) as (i32) != b'\0' as (i32)) {
-                        g_config.serverPort = atoi(port) as (u32);
+                        let port = CStr::from_ptr(port as *const i8).to_str().unwrap();
+                        g_config.serverPort = port.parse().unwrap();
                     }
                 } else if serverIndex >= g_config.serverNum {
                     break;
@@ -176,43 +127,24 @@ pub unsafe fn parseCatClientConfig(mut f1: *mut ezxml) -> i32 {
     }
 }
 
-unsafe extern "C" fn getCatClientConfig(mut filename: *const u8) -> *mut ezxml {
-    let mut file: *mut __sFILE = fopen(filename, (*b"r\0").as_ptr());
-    if file == 0i32 as (*mut ::std::os::raw::c_void) as (*mut __sFILE) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut ezxml)
-    } else {
+unsafe extern "C" fn getCatClientConfig(filename: *const u8) -> *mut ezxml {
+    if Path::new(CStr::from_ptr(filename as *const i8).to_str().unwrap()).exists() {
         ezxml_parse_file(filename)
+    } else {
+        null_mut()
     }
 }
 
-pub unsafe fn loadCatClientConfig(mut filename: *const u8) -> i32 {
+pub unsafe fn loadCatClientConfig(filename: *const u8) -> i32 {
+    println!("test");
     let mut config: *mut ezxml = getCatClientConfig(filename);
-    if 0i32 as (*mut ::std::os::raw::c_void) as (*mut ezxml) == config {
-        CLogLogWithLocation(
-            0x4u16,
-            (*b"File %s not exists.\0").as_ptr(),
-            file!().as_ptr(),
-            line!() as (i32),
-            (*b"loadCatClientConfig\0").as_ptr(),
-            filename,
-        );
-        CLogLogWithLocation(
-            0x4u16,
-            (*b"client.xml is required to initialize cat client!\0").as_ptr(),
-            file!().as_ptr(),
-            line!() as (i32),
-            (*b"loadCatClientConfig\0").as_ptr(),
-        );
-        -1i32
+    if config.is_null() {
+        // error!("File {} not exists.", filename);
+        error!("client.xml is required to initialize cat client!");
+        -1
     } else if parseCatClientConfig(config) < 0i32 {
-        CLogLogWithLocation(
-            0x8u16,
-            (*b"Failed to parse client.xml, is it a legal xml file?\0").as_ptr(),
-            file!().as_ptr(),
-            line!() as (i32),
-            (*b"loadCatClientConfig\0").as_ptr(),
-        );
-        -1i32
+        error!("Failed to parse client.xml, is it a legal xml file?");
+        -1
     } else {
         0i32
     }
@@ -237,13 +169,11 @@ pub unsafe fn initCatClientConfig(mut config: *mut CatClientConfig) {
     {
         g_config.selfHost = catsdscpy(g_config.selfHost, (*b"CUnknownHost\0").as_ptr());
     }
-    CLogLogWithLocation(
-        0x2u16,
-        (*b"Current hostname: %s\0").as_ptr(),
-        file!().as_ptr(),
-        line!() as (i32),
-        (*b"initCatClientConfig\0").as_ptr(),
-        g_config.selfHost,
+    info!(
+        "Current hostname: {}",
+        CStr::from_ptr(g_config.selfHost as *const i8)
+            .to_str()
+            .unwrap()
     );
     g_config.serverHost = catsdsnew((*b"127.0.0.1\0").as_ptr());
     g_config.serverPort = 8080u32;

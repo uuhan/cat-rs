@@ -185,10 +185,6 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut _CatClient
                 initCatSenderThread();
                 initCatMonitorThread();
                 g_cat_enabledFlag = 1;
-                info!(
-                    "Cat has been successfully initialized with appkey: {}",
-                    CStr::from_ptr(appkey as *const i8).to_str().unwrap()
-                );
                 1
             }
         })

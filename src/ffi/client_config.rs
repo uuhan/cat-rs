@@ -1,5 +1,8 @@
 use super::raw::CatClientConfig;
 use super::raw::CatClientInnerConfig;
+use libc::free;
+use libc::malloc;
+use libc::memset;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::path::Path;
@@ -15,20 +18,11 @@ extern "C" {
     fn ezxml_child(xml: *mut ezxml, name: *const u8) -> *mut ezxml;
     fn ezxml_free(xml: *mut ezxml);
     fn ezxml_parse_file(file: *const i8) -> *mut ezxml;
-    fn free(arg1: *mut ::std::os::raw::c_void);
     static mut g_log_debug: i32;
     static mut g_log_file_perDay: i32;
     static mut g_log_file_with_time: i32;
     static mut g_log_permissionOpt: i32;
     static mut g_log_saveFlag: i32;
-    fn logError(msg: *const u8, errStr: *const u8);
-    fn malloc(__size: usize) -> *mut ::std::os::raw::c_void;
-    fn memset(
-        __b: *mut ::std::os::raw::c_void,
-        __c: i32,
-        __len: usize,
-    ) -> *mut ::std::os::raw::c_void;
-// pub fn loadCatClientConfig(filename: *const u8) -> i32;
 }
 
 #[no_mangle]

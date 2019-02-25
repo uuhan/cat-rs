@@ -16,6 +16,7 @@ pub(crate) mod raw;
 
 use client_config::initCatClientConfig;
 use raw::CatClientConfig;
+use raw::CatClientInnerConfig;
 
 type cstring = *const u8;
 
@@ -70,7 +71,7 @@ extern "C" {
     static mut g_cat_enabledFlag: i32;
     static mut g_cat_nullMsg: _CatMessage;
     static mut g_cat_nullTrans: _CatTransaction;
-    static mut g_config: _CatClientInnerConfig;
+    static mut g_config: CatClientInnerConfig;
     fn getContextMessageTree() -> *mut _CatMessageTree;
     fn getNextMessageId() -> *mut u8;
     fn getNextMessageIdByAppkey(domain: *const u8) -> *mut u8;
@@ -494,42 +495,5 @@ impl CatTransaction {
     pub fn set_duration_start(&mut self, durationStart: usize) -> &Self {
         unsafe { (self.setDurationStart)(self, durationStart) };
         self
-    }
-}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct _CatClientInnerConfig {
-    pub appkey: *mut u8,
-    pub selfHost: *mut u8,
-    pub serverHost: *mut u8,
-    pub defaultIp: *mut u8,
-    pub defaultIpHex: *mut u8,
-    pub serverPort: u32,
-    pub serverNum: i32,
-    pub serverAddresses: *mut *mut u8,
-    pub messageEnableFlag: i32,
-    pub messageQueueSize: i32,
-    pub messageQueueBlockPrintCount: i32,
-    pub maxChildSize: i32,
-    pub maxContextElementSize: i32,
-    pub logFlag: i32,
-    pub logSaveFlag: i32,
-    pub logDebugFlag: i32,
-    pub logFileWithTime: i32,
-    pub logFilePerDay: i32,
-    pub logLevel: i32,
-    pub configDir: *mut u8,
-    pub dataDir: *mut u8,
-    pub indexFileName: *mut u8,
-    pub encoderType: i32,
-    pub enableHeartbeat: i32,
-    pub enableSampling: i32,
-    pub enableMultiprocessing: i32,
-}
-
-impl Clone for _CatClientInnerConfig {
-    fn clone(&self) -> Self {
-        *self
     }
 }

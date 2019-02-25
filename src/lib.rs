@@ -19,7 +19,6 @@ pub fn cat_version() -> &'static str {
 mod tests {
     use super::CatClient;
     use super::CatTransaction;
-    use std::ptr;
 
     #[test]
     fn test_transaction() {

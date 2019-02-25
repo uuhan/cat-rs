@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use crate::cat_version;
 use crate::ffi::*;
 use std::ffi::CString;
@@ -48,5 +49,16 @@ impl Drop for CatClient {
     fn drop(&mut self) {
         warn!("cat client destroyed!");
         self.destroy()
+    }
+}
+
+pub fn logEvent<S: ToString>(type_: S, name_: S, status: S, data: S) {
+    unsafe {
+        crate::ffi::logEvent(
+            c!(type_.to_string()),
+            c!(name_.to_string()),
+            c!(status.to_string()),
+            c!(data.to_string()),
+        )
     }
 }

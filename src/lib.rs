@@ -7,8 +7,8 @@ pub(crate) mod ffi;
 pub mod cat;
 
 /// re-export struct
+pub use cat::logEvent;
 pub use cat::CatClient;
-pub use ffi::logEvent;
 pub use ffi::CatTransaction;
 
 pub fn cat_version() -> &'static str {
@@ -29,19 +29,8 @@ mod tests {
         assert!(!tr.is_null());
 
         unsafe {
-            super::logEvent(
-                b"foo\0".as_ptr() as *const u8,
-                b"bar\0".as_ptr() as *const u8,
-                b"0\0".as_ptr() as *const u8,
-                ptr::null(),
-            );
-            super::logEvent(
-                b"foo\0".as_ptr() as *const u8,
-                b"bar\0".as_ptr() as *const u8,
-                b"1\0".as_ptr() as *const u8,
-                ptr::null(),
-            );
-
+            super::logEvent("foo", "bar", "0", "");
+            super::logEvent("foo", "bar", "1", "");
             (*tr).complete()
         }
     }

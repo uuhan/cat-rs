@@ -12,6 +12,6 @@ cc = "1.0.29"
 [dependencies]
 libc = "0.2.48"
 log = "0.4.6"
-ctest = "0.2.10"
 serde = "1.0.88"
 serde_json = "1.0.38"
+cat-rs = { path = "." }

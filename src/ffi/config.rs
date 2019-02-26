@@ -3,5 +3,45 @@ use serde_json::Result;
 
 #[derive(Serialize, Deserialize)]
 struct ClientConfig {
-    host: String,
+    servers: Vec<ServerConfig>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ServerConfig {
+    ip: String,
+    port: u16,
+    #[serde(rename(deserialize = "http-port"))]
+    httpPort: u16,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ClientConfig;
+    use serde_json::Error;
+
+    #[test]
+    fn test_client_config() {
+        let data = r#"{
+         "servers": [
+            {
+              "ip": "47.88.131.78",
+              "port": 2280,
+              "http-port": 2040
+            },
+            {
+              "ip": "47.88.131.78",
+              "port": 2280,
+              "http-port": 2040
+            },
+            {
+              "ip": "47.88.131.78",
+              "port": 2280,
+              "http-port": 2040
+            }
+          ]
+        }"#;
+
+        let config: ClientConfig = serde_json::from_str(data).unwrap();
+        assert_eq!(config.servers.len(), 3);
+    }
 }

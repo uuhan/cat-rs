@@ -24,6 +24,15 @@ type cstring = *const u8;
 /// cat static
 static mut G_CAT_INIT: i32 = 0i32;
 
+/// 用于方便转换rust和c字符串的宏
+///
+/// Example:
+///
+/// ```rust,ignore
+/// c!("foo")
+/// c!(foo)
+/// c!(foo.clone())
+/// ```
 #[macro_export]
 macro_rules! c {
     ($data:ident) => {
@@ -36,15 +45,6 @@ macro_rules! c {
 
 #[allow(dead_code)]
 extern "C" {
-    fn CLogLogWithLocation(
-        type_: u16,
-        format: *const u8,
-        file: *const u8,
-        line: i32,
-        function: *const u8,
-        ...
-    );
-
     /// __sync_add_and_fetch
     fn addCountMetricToAggregator(name: *const u8, count: i32);
     fn addDurationMetricToAggregator(name: *const u8, timeMs: i32);
@@ -84,6 +84,7 @@ extern "C" {
     fn initMessageManager(domain: *const u8, hostName: *const u8);
 }
 
+/// 检查cat是否初始化成功
 #[inline]
 pub fn isCatEnabled() -> bool {
     unsafe { g_cat_enabledFlag != 0 }

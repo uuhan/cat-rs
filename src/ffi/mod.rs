@@ -13,6 +13,9 @@ use std::io::prelude::*;
 use std::mem;
 use std::ptr;
 
+#[macro_use]
+mod mac;
+
 mod client_config;
 pub mod config;
 pub(crate) mod raw;
@@ -20,24 +23,14 @@ pub(crate) mod raw;
 use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;
 use config::ClientConfig;
-
-use raw::CatClientConfig;
-use raw::CatClientInnerConfig;
-
-type cstring = *const u8;
+pub use raw::CatClientConfig;
+pub use raw::CatClientInnerConfig;
+pub use raw::CatMessage;
+pub use raw::CatMessageTree;
+pub use raw::CatTransaction;
 
 /// cat static
 static mut G_CAT_INIT: i32 = 0i32;
-
-#[macro_export]
-macro_rules! c {
-    ($data:ident) => {
-        CString::new($data).unwrap().as_ptr() as *const u8
-    };
-    ($expr:expr) => {
-        CString::new($expr).unwrap().as_ptr() as *const u8
-    };
-}
 
 #[allow(dead_code)]
 extern "C" {
@@ -55,7 +48,7 @@ extern "C" {
     fn addDurationMetricToAggregator(name: *const u8, timeMs: i32);
 
     fn catMessageManagerDestroy();
-    fn catMessageManagerStartTrans(trans: *mut _CatTransaction);
+    fn catMessageManagerStartTrans(trans: *mut CatTransaction);
 
     /// sds
     fn catsdsfree(s: *mut u8);
@@ -68,16 +61,14 @@ extern "C" {
     fn clearCatSenderThread();
     fn clearCatServerConnManager();
 
-    fn createCatEvent(type_: *const u8, name: *const u8) -> *mut _CatMessage;
-    fn createCatHeartBeat(type_: *const u8, name: *const u8) -> *mut _CatMessage;
-    fn createCatMetric(type_: *const u8, name: *const u8) -> *mut _CatMessage;
-    fn createCatTransaction(type_: *const u8, name: *const u8) -> *mut _CatTransaction;
+    fn createCatEvent(type_: *const u8, name: *const u8) -> *mut CatMessage;
+    fn createCatHeartBeat(type_: *const u8, name: *const u8) -> *mut CatMessage;
+    fn createCatMetric(type_: *const u8, name: *const u8) -> *mut CatMessage;
+    fn createCatTransaction(type_: *const u8, name: *const u8) -> *mut CatTransaction;
     fn destroyMessageIdHelper();
     static mut g_cat_enabledFlag: i32;
-    static mut g_cat_nullMsg: _CatMessage;
-    static mut g_cat_nullTrans: _CatTransaction;
     static mut g_config: CatClientInnerConfig;
-    fn getContextMessageTree() -> *mut _CatMessageTree;
+    fn getContextMessageTree() -> *mut CatMessageTree;
     fn getNextMessageId() -> *mut u8;
     fn getNextMessageIdByAppkey(domain: *const u8) -> *mut u8;
     fn initCatAggregatorThread();
@@ -135,7 +126,7 @@ pub unsafe fn getThreadLocalMessageTreeParentId() -> *mut u8 {
 
 pub unsafe fn setThreadLocalMessageTreeId(messageId: *mut u8) {
     if isCatEnabled() {
-        let mut pTree: *mut _CatMessageTree = getContextMessageTree();
+        let mut pTree: *mut CatMessageTree = getContextMessageTree();
         if !(*pTree).messageId.is_null() {
             catsdsfree((*pTree).messageId);
             (*pTree).messageId = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
@@ -147,7 +138,7 @@ pub unsafe fn setThreadLocalMessageTreeId(messageId: *mut u8) {
 
 pub unsafe fn setThreadLocalMessageTreeRootId(messageId: *mut u8) {
     if isCatEnabled() {
-        let mut pTree: *mut _CatMessageTree = getContextMessageTree();
+        let mut pTree: *mut CatMessageTree = getContextMessageTree();
         if !(*pTree).rootMessageId.is_null() {
             catsdsfree((*pTree).rootMessageId);
             (*pTree).rootMessageId = ptr::null_mut();
@@ -159,7 +150,7 @@ pub unsafe fn setThreadLocalMessageTreeRootId(messageId: *mut u8) {
 
 pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
     if isCatEnabled() {
-        let mut pTree: *mut _CatMessageTree = getContextMessageTree();
+        let mut pTree: *mut CatMessageTree = getContextMessageTree();
         if !(*pTree).parentMessageId.is_null() {
             catsdsfree((*pTree).parentMessageId);
             (*pTree).parentMessageId = ptr::null_mut();
@@ -225,7 +216,7 @@ pub unsafe fn catClientDestroy() -> i32 {
 
 pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction {
     if isCatEnabled() {
-        let trans: *mut _CatTransaction = createCatTransaction(c!(type_), c!(name));
+        let trans: *mut CatTransaction = createCatTransaction(c!(type_), c!(name));
         if trans.is_null() {
             ptr::null_mut()
         } else {
@@ -250,7 +241,7 @@ pub unsafe fn newTransactionWithDuration(
     name: String,
     duration: usize,
 ) -> *mut CatTransaction {
-    let trans: *mut _CatTransaction = newTransaction(type_, name);
+    let trans: *mut CatTransaction = newTransaction(type_, name);
     ((*trans).setDurationInMillis)(trans, duration);
     if duration < (60i32 * 1000i32) as (usize) {
         ((*trans).setTimestamp)(trans, GetTime64().wrapping_sub(duration));
@@ -259,41 +250,19 @@ pub unsafe fn newTransactionWithDuration(
 }
 
 pub unsafe fn newCompletedTransactionWithDuration(type_: String, name: String, duration: usize) {
-    let trans: *mut _CatTransaction = newTransactionWithDuration(type_, name, duration);
+    let trans: *mut CatTransaction = newTransactionWithDuration(type_, name, duration);
     ((*trans).complete)(trans);
 }
 
-pub unsafe fn newHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut _CatMessage {
+pub unsafe fn newHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     if isCatEnabled() {
         (*getContextMessageTree()).canDiscard = 0i32;
-        let mut hb: *mut _CatMessage = createCatHeartBeat(type_, name);
+        let mut hb: *mut CatMessage = createCatHeartBeat(type_, name);
         hb
     } else {
         &mut CatMessage::default()
     }
 }
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct _CatMessageTree {
-    pub root: *mut _CatMessage,
-    pub messageId: *mut u8,
-    pub parentMessageId: *mut u8,
-    pub rootMessageId: *mut u8,
-    pub sessionToken: *mut u8,
-    pub threadGroupName: *mut u8,
-    pub threadId: *mut u8,
-    pub threadName: *mut u8,
-    pub canDiscard: i32,
-}
-
-impl Clone for _CatMessageTree {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-pub type CatMessageTree = _CatMessageTree;
 
 pub unsafe fn logError(mut msg: *const u8, mut errStr: *const u8) {
     (*getContextMessageTree()).canDiscard = 0i32;
@@ -305,9 +274,9 @@ pub unsafe fn logError(mut msg: *const u8, mut errStr: *const u8) {
     );
 }
 
-pub unsafe fn newEvent(mut type_: *const u8, mut name: *const u8) -> *mut _CatMessage {
+pub unsafe fn newEvent(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     if isCatEnabled() {
-        let mut event: *mut _CatMessage = createCatEvent(type_, name);
+        let mut event: *mut CatMessage = createCatEvent(type_, name);
         event
     } else {
         &mut CatMessage::default()
@@ -321,7 +290,7 @@ pub unsafe fn logEvent(
     mut data: *const u8,
 ) {
     if isCatEnabled() {
-        let mut event: *mut _CatMessage = newEvent(type_, name);
+        let mut event: *mut CatMessage = newEvent(type_, name);
         if !event.is_null() {
             if !data.is_null() {
                 ((*event).addData)(event, data);
@@ -334,9 +303,9 @@ pub unsafe fn logEvent(
     }
 }
 
-pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut _CatMessage {
+pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     if isCatEnabled() {
-        let mut metric: *mut _CatMessage = createCatMetric(type_, name);
+        let mut metric: *mut CatMessage = createCatMetric(type_, name);
         metric
     } else {
         &mut CatMessage::default()
@@ -344,7 +313,7 @@ pub unsafe fn newMetric(mut type_: *const u8, mut name: *const u8) -> *mut _CatM
 }
 
 pub unsafe fn _logMetric(mut name: *const u8, mut status: *const u8, mut value: *const u8) {
-    let mut metric: *mut _CatMessage = newMetric((*b"\0").as_ptr(), name);
+    let mut metric: *mut CatMessage = newMetric((*b"\0").as_ptr(), name);
     if !value.is_null() {
         ((*metric).addData)(metric, value);
     }
@@ -373,132 +342,5 @@ pub unsafe fn logMetricForDuration(mut name: *const u8, mut duration: usize) {
         let mut val: *mut u8 = catsdsfromlonglong(duration as (isize));
         _logMetric(name, (*b"T\0").as_ptr(), val as (*const u8));
         catsdsfree(val);
-    }
-}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct _CatMessage {
-    pub addData: unsafe extern "C" fn(*mut _CatMessage, *const u8),
-    pub addKV: unsafe extern "C" fn(*mut _CatMessage, *const u8, *const u8),
-    pub setStatus: unsafe extern "C" fn(*mut _CatMessage, *const u8),
-    pub setTimestamp: unsafe extern "C" fn(*mut _CatMessage, usize),
-    pub complete: unsafe extern "C" fn(*mut _CatMessage),
-}
-
-impl Clone for _CatMessage {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Default for _CatMessage {
-    fn default() -> Self {
-        unsafe { g_cat_nullMsg }
-    }
-}
-
-pub type CatMessage = _CatMessage;
-
-/// TODO: CatMessage
-impl CatMessage {
-    pub fn add_data(&mut self, data: String) -> &Self {
-        unsafe { (self.addData)(self, c!(data)) };
-        self
-    }
-
-    pub fn add_kv(&mut self, dataKey: String, dataValue: String) -> &Self {
-        unsafe { (self.addKV)(self, c!(dataKey), c!(dataValue)) };
-        self
-    }
-
-    pub fn set_status(&mut self, status: String) -> &Self {
-        unsafe { (self.setStatus)(self, c!(status)) };
-        self
-    }
-
-    pub fn set_timestamp(&mut self, timestamp: u64) -> &Self {
-        unsafe { (self.setTimestamp)(self, timestamp as usize) };
-        self
-    }
-
-    pub fn complete(&mut self) {
-        unsafe { (self.complete)(self) }
-    }
-}
-
-pub type CatEvent = CatMessage;
-pub type CatMetric = CatMessage;
-pub type CatHeartBeat = CatMessage;
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct _CatTransaction {
-    pub addData: unsafe extern "C" fn(*mut _CatTransaction, *const u8),
-    pub addKV: unsafe extern "C" fn(*mut _CatTransaction, *const u8, *const u8),
-    pub setStatus: unsafe extern "C" fn(*mut _CatTransaction, *const u8),
-    pub setTimestamp: unsafe extern "C" fn(*mut _CatTransaction, usize),
-    pub complete: unsafe extern "C" fn(*mut _CatTransaction),
-    pub addChild: unsafe extern "C" fn(*mut _CatTransaction, *mut _CatMessage),
-    pub setDurationInMillis: unsafe extern "C" fn(*mut _CatTransaction, usize),
-    pub setDurationStart: unsafe extern "C" fn(*mut _CatTransaction, usize),
-}
-
-impl Clone for _CatTransaction {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Default for _CatTransaction {
-    fn default() -> Self {
-        unsafe { g_cat_nullTrans }
-    }
-}
-
-pub type CatTransaction = _CatTransaction;
-
-impl CatTransaction {
-    pub fn new<T: ToString>(r#type: T, name: T) -> *mut Self {
-        unsafe { newTransaction(r#type.to_string(), name.to_string()) }
-    }
-
-    pub fn add_data(&mut self, data: String) -> &Self {
-        unsafe { (self.addData)(self, c!(data)) };
-        self
-    }
-
-    pub fn add_kv(&mut self, dataKey: String, dataValue: String) -> &Self {
-        unsafe { (self.addKV)(self, c!(dataKey), c!(dataValue)) };
-        self
-    }
-
-    pub fn set_status(&mut self, status: String) -> &Self {
-        unsafe { (self.setStatus)(self, c!(status)) };
-        self
-    }
-
-    pub fn set_timestamp(&mut self, timestamp: usize) -> &Self {
-        unsafe { (self.setTimestamp)(self, timestamp) };
-        self
-    }
-
-    pub fn complete(&mut self) {
-        unsafe { (self.complete)(self) }
-    }
-
-    pub fn add_child(&mut self, child: &mut CatMessage) -> &Self {
-        unsafe { (self.addChild)(self, child) };
-        self
-    }
-
-    pub fn set_duration_in_millis(&mut self, duration: usize) -> &Self {
-        unsafe { (self.setDurationInMillis)(self, duration) };
-        self
-    }
-
-    pub fn set_duration_start(&mut self, durationStart: usize) -> &Self {
-        unsafe { (self.setDurationStart)(self, durationStart) };
-        self
     }
 }

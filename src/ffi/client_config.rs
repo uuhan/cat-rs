@@ -83,13 +83,13 @@ pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
             .unwrap()
     );
     g_config.serverHost = catsdsnew((*b"127.0.0.1\0").as_ptr());
-    g_config.serverPort = 8080u32;
-    g_config.serverNum = 3i32;
+    g_config.serverPort = 8080;
+    g_config.serverNum = 3;
     g_config.serverAddresses =
         malloc((g_config.serverNum as (usize)).wrapping_mul(::std::mem::size_of::<*mut u8>()))
             as (*mut *mut u8);
-    let mut i: i32 = 0i32;
-    i = 0i32;
+    let mut i: i32 = 0;
+    i = 0;
     'loop3: loop {
         if !(i < g_config.serverNum) {
             break;
@@ -109,17 +109,17 @@ pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
         *g_config.serverAddresses.offset(2isize),
         (*b"127.0.0.1:2280\0").as_ptr(),
     );
-    g_config.messageEnableFlag = 1i32;
-    g_config.messageQueueSize = 10000i32;
-    g_config.messageQueueBlockPrintCount = 100000i32;
-    g_config.maxContextElementSize = 2000i32;
-    g_config.maxChildSize = 2048i32;
-    g_config.logFlag = 1i32;
-    g_config.logSaveFlag = 1i32;
+    g_config.messageEnableFlag = 1;
+    g_config.messageQueueSize = 10000;
+    g_config.messageQueueBlockPrintCount = 100000;
+    g_config.maxContextElementSize = 2000;
+    g_config.maxChildSize = 2048;
+    g_config.logFlag = 1;
+    g_config.logSaveFlag = 1;
     g_config.logDebugFlag = config.enableDebugLog;
-    g_config.logFilePerDay = 1i32;
-    g_config.logFileWithTime = 0i32;
-    g_config.logLevel = 0xffi32;
+    g_config.logFilePerDay = 1;
+    g_config.logFileWithTime = 0;
+    g_config.logLevel = 0xff;
     g_config.configDir = catsdsnew((*b"./\0").as_ptr());
     g_config.dataDir = catsdsnew((*b"/data/appdatas/cat/\0").as_ptr());
     g_config.indexFileName = catsdsnew((*b"client.idx.h\0").as_ptr());
@@ -128,7 +128,7 @@ pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
     g_config.enableSampling = config.enableSampling;
     g_config.enableMultiprocessing = config.enableMultiprocessing;
     if g_config.logFlag == 0 {
-        g_log_permissionOpt = 0i32;
+        g_log_permissionOpt = 0;
     } else {
         g_log_permissionOpt = g_config.logLevel;
         g_log_saveFlag = g_config.logLevel;

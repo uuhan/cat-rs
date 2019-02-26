@@ -14,10 +14,6 @@ extern "C" {
     fn catsdsfree(s: *mut u8);
     fn catsdsnew(init: *const u8) -> *mut u8;
     fn catsdsnewEmpty(preAlloclen: usize) -> *mut u8;
-    fn ezxml_attr(xml: *mut ezxml, attr: *const u8) -> *const u8;
-    fn ezxml_child(xml: *mut ezxml, name: *const u8) -> *mut ezxml;
-    fn ezxml_free(xml: *mut ezxml);
-    fn ezxml_parse_file(file: *const i8) -> *mut ezxml;
     static mut g_log_debug: i32;
     static mut g_log_file_perDay: i32;
     static mut g_log_file_with_time: i32;
@@ -55,27 +51,6 @@ pub static mut g_config: CatClientInnerConfig = CatClientInnerConfig {
     enableSampling: 0i32,
     enableMultiprocessing: 0i32,
 };
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct ezxml {
-    pub name: *mut u8,
-    pub attr: *mut *mut u8,
-    pub txt: *mut u8,
-    pub off: usize,
-    pub next: *mut ezxml,
-    pub sibling: *mut ezxml,
-    pub ordered: *mut ezxml,
-    pub child: *mut ezxml,
-    pub parent: *mut ezxml,
-    pub flags: i16,
-}
-
-impl Clone for ezxml {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
 
 pub unsafe fn loadCatClientConfig(filename: &str) -> i32 {
     let mut ip: *const u8;

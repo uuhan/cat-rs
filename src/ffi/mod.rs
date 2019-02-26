@@ -8,6 +8,8 @@ use std::default::Default;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt::{self, Display};
+use std::fs::File;
+use std::io::prelude::*;
 use std::mem;
 use std::ptr;
 
@@ -17,6 +19,8 @@ pub(crate) mod raw;
 
 use client_config::initCatClientConfig;
 use client_config::loadCatClientConfig;
+use config::ClientConfig;
+
 use raw::CatClientConfig;
 use raw::CatClientInnerConfig;
 
@@ -168,11 +172,17 @@ pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
 
 pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut CatClientConfig) -> i32 {
     if G_CAT_INIT != 0 {
-        0i32
+        0
     } else {
+        let mut f = File::open("cat.client.json").unwrap();
+        let mut contents = String::new();
+        f.read_to_string(&mut contents).unwrap();
+        let conf: ClientConfig = serde_json::from_str(contents.as_str()).unwrap();
+
         G_CAT_INIT = 1i32;
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
+
         (if loadCatClientConfig("/data/appdatas/cat/client.xml") < 0i32 {
             G_CAT_INIT = 0;
             g_cat_enabledFlag = 0;

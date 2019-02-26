@@ -18,7 +18,6 @@ pub mod config;
 pub(crate) mod raw;
 
 use client_config::initCatClientConfig;
-use client_config::loadCatClientConfig;
 use config::ClientConfig;
 
 use raw::CatClientConfig;
@@ -183,28 +182,23 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
 
-        (if loadCatClientConfig("/data/appdatas/cat/client.xml") < 0i32 {
+        g_config.appkey = catsdsnew(appkey);
+        initMessageManager(appkey, g_config.selfHost);
+        initMessageIdHelper();
+        if initCatServerConnManager() == 0 {
             G_CAT_INIT = 0;
             g_cat_enabledFlag = 0;
-            error!("Failed to initialize cat: Error occurred while loading client config.");
+            error!(
+                "Failed to initialize cat: Error occurred while getting router from remote server."
+            );
             0
         } else {
-            g_config.appkey = catsdsnew(appkey);
-            initMessageManager(appkey, g_config.selfHost);
-            initMessageIdHelper();
-            if initCatServerConnManager() == 0 {
-                G_CAT_INIT = 0;
-                g_cat_enabledFlag = 0;
-                error!("Failed to initialize cat: Error occurred while getting router from remote server.");
-                0
-            } else {
-                initCatAggregatorThread();
-                initCatSenderThread();
-                initCatMonitorThread();
-                g_cat_enabledFlag = 1;
-                1
-            }
-        })
+            initCatAggregatorThread();
+            initCatSenderThread();
+            initCatMonitorThread();
+            g_cat_enabledFlag = 1;
+            1
+        }
     }
 }
 

@@ -53,16 +53,9 @@ pub static mut g_config: CatClientInnerConfig = CatClientInnerConfig {
     enableMultiprocessing: 0i32,
 };
 
-pub unsafe fn loadCatClientConfig(filename: &str) -> i32 {
-    let mut ip: *const u8;
-    ip = b"47.99.131.78\0".as_ptr();
-    g_config.serverHost = catsdsnew(ip);
-    g_config.serverPort = 2040;
-    0
-}
-
 pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
     g_config = mem::uninitialized();
+
     g_log_debug = config.enableDebugLog;
     g_config.appkey = (*b"cat\0").as_ptr() as (*mut u8);
     g_config.selfHost = catsdsnewEmpty(128usize);
@@ -82,8 +75,11 @@ pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
             .to_str()
             .unwrap()
     );
-    g_config.serverHost = catsdsnew((*b"127.0.0.1\0").as_ptr());
-    g_config.serverPort = 8080;
+
+    /// TODO
+    g_config.serverHost = catsdsnew((*b"47.99.131.78\0").as_ptr());
+    g_config.serverPort = 2040;
+
     g_config.serverNum = 3;
     g_config.serverAddresses =
         malloc((g_config.serverNum as (usize)).wrapping_mul(::std::mem::size_of::<*mut u8>()))

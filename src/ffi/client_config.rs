@@ -76,7 +76,7 @@ pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
             .unwrap()
     );
 
-    /// TODO
+    // TODO
     g_config.serverHost = catsdsnew((*b"47.99.131.78\0").as_ptr());
     g_config.serverPort = 2040;
 

@@ -2,12 +2,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
 #[derive(Serialize, Deserialize)]
-struct ClientConfig {
+pub struct ClientConfig {
     servers: Vec<ServerConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct ServerConfig {
+pub struct ServerConfig {
     ip: String,
     port: u16,
     #[serde(rename(deserialize = "http-port"))]
@@ -24,12 +24,12 @@ mod tests {
         let data = r#"{
          "servers": [
             {
-              "ip": "47.88.131.78",
+              "ip": "127.0.0.1",
               "port": 2280,
               "http-port": 2040
             },
             {
-              "ip": "47.88.131.78",
+              "ip": "127.0.0.1",
               "port": 2280,
               "http-port": 2040
             },

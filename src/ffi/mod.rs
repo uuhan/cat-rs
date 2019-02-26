@@ -17,6 +17,7 @@ mod client_config;
 pub mod config;
 pub(crate) mod raw;
 
+use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;
 use config::ClientConfig;
 
@@ -63,7 +64,6 @@ extern "C" {
 
     /// __sync_add_and_fetch {0}
     fn clearCatAggregatorThread();
-    fn clearCatClientConfig();
     fn clearCatMonitor();
     fn clearCatSenderThread();
     fn clearCatServerConnManager();

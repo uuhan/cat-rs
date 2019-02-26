@@ -1,11 +1,10 @@
 use libc::{
-    c_char, free, isprint, isspace, malloc, memcmp, memcpy, memset, realloc, strchr, strlen,
-    tolower, toupper,
+    c_char, calloc, free, isprint, isspace, malloc, memcmp, memcpy, memset, realloc, strchr,
+    strlen, tolower, toupper,
 };
 use std::mem;
 
 extern "C" {
-    fn calloc(__count: usize, __size: usize) -> *mut ::std::os::raw::c_void;
     fn catsdsavail(s: *mut u8) -> usize;
     fn catsdscatprintf(s: *mut u8, fmt: *const u8, ...) -> *mut u8;
     fn catsdslen(s: *mut u8) -> usize;

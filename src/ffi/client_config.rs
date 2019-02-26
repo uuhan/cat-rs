@@ -129,7 +129,6 @@ unsafe fn getCatClientConfig(filename: &str) -> *mut ezxml {
 }
 
 pub unsafe fn loadCatClientConfig(filename: &str) -> i32 {
-    println!("test");
     let mut config: *mut ezxml = getCatClientConfig(filename);
     if config.is_null() {
         error!("File {} not exists.", filename);

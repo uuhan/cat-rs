@@ -23,6 +23,7 @@ extern "C" {
     static mut g_log_file_with_time: i32;
     static mut g_log_permissionOpt: i32;
     static mut g_log_saveFlag: i32;
+
 }
 
 #[no_mangle]
@@ -76,70 +77,12 @@ impl Clone for ezxml {
     }
 }
 
-pub unsafe fn parseCatClientConfig(mut f1: *mut ezxml) -> i32 {
-    let mut serverIndex: i32 = 0i32;
-    let mut servers: *mut ezxml;
-    let mut server: *mut ezxml;
-    servers = ezxml_child(f1, (*b"servers\0").as_ptr());
-    'loop1: loop {
-        if servers.is_null() {
-            break;
-        }
-        server = ezxml_child(servers, (*b"server\0").as_ptr());
-        'loop6: loop {
-            if server.is_null() {
-                break;
-            }
-            let mut ip: *const u8;
-            ip = ezxml_attr(server, (*b"ip\0").as_ptr());
-            if !(0i32 as (*mut ::std::os::raw::c_void) as (*const u8) == ip
-                || *ip.offset(0isize) as (i32) == b'\0' as (i32))
-            {
-                if serverIndex == 0i32 {
-                    let mut port: *const u8;
-                    g_config.serverHost = catsdsnew(ip);
-                    port = ezxml_attr(server, (*b"http-port\0").as_ptr());
-                    if !port.is_null() && (*port.offset(0isize) as (i32) != b'\0' as (i32)) {
-                        let port = CStr::from_ptr(port as *const i8).to_str().unwrap();
-                        g_config.serverPort = port.parse().unwrap();
-                    }
-                } else if serverIndex >= g_config.serverNum {
-                    break;
-                }
-                serverIndex = serverIndex + 1;
-            }
-            server = (*server).next;
-        }
-        servers = (*servers).next;
-    }
-    ezxml_free(f1);
-    if serverIndex <= 0i32 {
-        -1i32
-    } else {
-        0i32
-    }
-}
-
-unsafe fn getCatClientConfig(filename: &str) -> *mut ezxml {
-    if Path::new(filename).exists() {
-        ezxml_parse_file(CString::new(filename).unwrap().as_ptr())
-    } else {
-        null_mut()
-    }
-}
-
 pub unsafe fn loadCatClientConfig(filename: &str) -> i32 {
-    let mut config: *mut ezxml = getCatClientConfig(filename);
-    if config.is_null() {
-        error!("File {} not exists.", filename);
-        error!("client.xml is required to initialize cat client!");
-        -1
-    } else if parseCatClientConfig(config) < 0i32 {
-        error!("Failed to parse client.xml, is it a legal xml file?");
-        -1
-    } else {
-        0i32
-    }
+    let mut ip: *const u8;
+    ip = b"47.99.131.78\0".as_ptr();
+    g_config.serverHost = catsdsnew(ip);
+    g_config.serverPort = 2040;
+    0
 }
 
 pub unsafe fn initCatClientConfig(mut config: *mut CatClientConfig) {

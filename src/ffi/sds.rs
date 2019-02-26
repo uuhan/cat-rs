@@ -10,11 +10,6 @@ extern "C" {
     fn catsdslen(s: *mut u8) -> usize;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn isascii(mut _c: i32) -> i32 {
-    (_c & !0x7fi32 == 0i32) as (i32)
-}
-
 #[derive(Copy)]
 #[repr(C)]
 pub struct sdshdr {

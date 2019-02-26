@@ -26,7 +26,7 @@ impl CatClient {
         unsafe {
             catClientInitWithConfig(
                 CString::new(self.appkey.clone()).unwrap().as_ptr() as *const u8,
-                &mut self.config,
+                self.config,
             );
             self
         }

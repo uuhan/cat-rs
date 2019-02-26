@@ -170,7 +170,7 @@ pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
     }
 }
 
-pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut CatClientConfig) -> i32 {
+pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig) -> i32 {
     if G_CAT_INIT != 0 {
         0
     } else {
@@ -209,7 +209,7 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: *mut CatClientC
 }
 
 pub unsafe fn catClientInit(appkey: *const u8) -> i32 {
-    catClientInitWithConfig(appkey, &mut CatClientConfig::default())
+    catClientInitWithConfig(appkey, CatClientConfig::default())
 }
 
 pub unsafe fn catClientDestroy() -> i32 {

@@ -1,10 +1,11 @@
 use super::raw::CatClientConfig;
 use super::raw::CatClientInnerConfig;
+use libc::c_void;
 use libc::free;
 use libc::malloc;
-use libc::memset;
 use std::ffi::CStr;
 use std::ffi::CString;
+use std::mem;
 use std::path::Path;
 use std::ptr::null_mut;
 
@@ -60,13 +61,9 @@ pub unsafe fn loadCatClientConfig(filename: &str) -> i32 {
     0
 }
 
-pub unsafe fn initCatClientConfig(mut config: *mut CatClientConfig) {
-    memset(
-        &mut g_config as (*mut CatClientInnerConfig) as (*mut ::std::os::raw::c_void),
-        0i32,
-        ::std::mem::size_of::<CatClientInnerConfig>(),
-    );
-    g_log_debug = (*config).enableDebugLog;
+pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
+    g_config = mem::uninitialized();
+    g_log_debug = config.enableDebugLog;
     g_config.appkey = (*b"cat\0").as_ptr() as (*mut u8);
     g_config.selfHost = catsdsnewEmpty(128usize);
     g_config.defaultIp = catsdsnew((*b"127.0.0.1\0").as_ptr());
@@ -119,17 +116,17 @@ pub unsafe fn initCatClientConfig(mut config: *mut CatClientConfig) {
     g_config.maxChildSize = 2048i32;
     g_config.logFlag = 1i32;
     g_config.logSaveFlag = 1i32;
-    g_config.logDebugFlag = (*config).enableDebugLog;
+    g_config.logDebugFlag = config.enableDebugLog;
     g_config.logFilePerDay = 1i32;
     g_config.logFileWithTime = 0i32;
     g_config.logLevel = 0xffi32;
     g_config.configDir = catsdsnew((*b"./\0").as_ptr());
     g_config.dataDir = catsdsnew((*b"/data/appdatas/cat/\0").as_ptr());
     g_config.indexFileName = catsdsnew((*b"client.idx.h\0").as_ptr());
-    g_config.encoderType = (*config).encoderType;
-    g_config.enableHeartbeat = (*config).enableHeartbeat;
-    g_config.enableSampling = (*config).enableSampling;
-    g_config.enableMultiprocessing = (*config).enableMultiprocessing;
+    g_config.encoderType = config.encoderType;
+    g_config.enableHeartbeat = config.enableHeartbeat;
+    g_config.enableSampling = config.enableSampling;
+    g_config.enableMultiprocessing = config.enableMultiprocessing;
     if g_config.logFlag == 0 {
         g_log_permissionOpt = 0i32;
     } else {

@@ -61,14 +61,7 @@ pub unsafe fn initCatClientConfig(mut config: CatClientConfig) {
     g_config.selfHost = catsdsnewEmpty(128usize);
     g_config.defaultIp = catsdsnew((*b"127.0.0.1\0").as_ptr());
     g_config.defaultIpHex = catsdsnew((*b"7f000001\0").as_ptr());
-    if catAnetGetHost(
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8),
-        g_config.selfHost,
-        128usize,
-    ) == -1i32
-    {
-        g_config.selfHost = catsdscpy(g_config.selfHost, (*b"CUnknownHost\0").as_ptr());
-    }
+    g_config.selfHost = catsdscpy(g_config.selfHost, (*b"CUnknownHost\0").as_ptr());
     info!(
         "Current hostname: {}",
         CStr::from_ptr(g_config.selfHost as *const i8)

@@ -29,32 +29,21 @@ pub use raw::CatClientInnerConfig;
 pub use raw::CatMessage;
 pub use raw::CatMessageTree;
 pub use raw::CatTransaction;
+use sds::catsdsfree;
+use sds::catsdsfromlonglong;
+use sds::catsdsnew;
 
 /// cat static
 static mut G_CAT_INIT: i32 = 0i32;
 
 #[allow(dead_code)]
 extern "C" {
-    fn CLogLogWithLocation(
-        type_: u16,
-        format: *const u8,
-        file: *const u8,
-        line: i32,
-        function: *const u8,
-        ...
-    );
-
     /// __sync_add_and_fetch
     fn addCountMetricToAggregator(name: *const u8, count: i32);
     fn addDurationMetricToAggregator(name: *const u8, timeMs: i32);
 
     fn catMessageManagerDestroy();
     fn catMessageManagerStartTrans(trans: *mut CatTransaction);
-
-    /// sds
-    fn catsdsfree(s: *mut u8);
-    fn catsdsfromlonglong(value: isize) -> *mut u8;
-    fn catsdsnew(init: *const u8) -> *mut u8;
 
     /// __sync_add_and_fetch {0}
     fn clearCatAggregatorThread();

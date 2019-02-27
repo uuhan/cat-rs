@@ -14,13 +14,11 @@ use std::path::Path;
 use std::ptr::null_mut;
 
 extern "C" {
-    fn catAnetGetHost(err: *mut u8, host: *mut u8, ipbuf_len: usize) -> i32;
     static mut g_log_debug: i32;
     static mut g_log_file_perDay: i32;
     static mut g_log_file_with_time: i32;
     static mut g_log_permissionOpt: i32;
     static mut g_log_saveFlag: i32;
-
 }
 
 #[no_mangle]

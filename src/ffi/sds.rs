@@ -23,7 +23,7 @@ unsafe fn catsdslen(s: *mut u8) -> usize {
 pub struct sdshdr {
     pub len: u32,
     pub free: u32,
-    pub buf: [c_char; 1],
+    pub buf: [c_char; 256],
 }
 
 pub unsafe fn catsdsnewlen(mut init: *const ::std::os::raw::c_void, mut initlen: usize) -> *mut u8 {
@@ -47,15 +47,10 @@ pub unsafe fn catsdsnewlen(mut init: *const ::std::os::raw::c_void, mut initlen:
     } else {
         (*sh).len = initlen as (u32);
         (*sh).free = 0u32;
-        // (*sh).buf = mem::uninitialized();
-        println!("{}", initlen);
-        printf(b"test %d\0".as_ptr() as *const i8, 4);
         if initlen != 0 && !init.is_null() {
             memcpy(((*sh).buf.as_ptr()) as (*mut c_void), init, initlen);
         }
-        // *((sh as usize + initlen) as *mut c_char) = '\0' as i8;
         (*sh).buf[initlen] = 0;
-        // println!("char: {:?}", (*sh).buf);
         (*sh).buf.as_ptr() as *mut u8
     }
 }

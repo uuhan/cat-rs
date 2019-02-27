@@ -1,35 +1,33 @@
 use libc::{
-    c_char, calloc, free, isprint, isspace, malloc, memcmp, memcpy, memset, realloc, strchr,
-    strlen, tolower, toupper,
+    c_char, c_void, calloc, free, isprint, isspace, malloc, memcmp, memcpy, memset, printf,
+    realloc, strchr, strlen, tolower, toupper,
 };
 use std::mem;
+use std::ptr;
 
 extern "C" {
-    fn catsdsavail(s: *mut u8) -> usize;
     fn catsdscatprintf(s: *mut u8, fmt: *const u8, ...) -> *mut u8;
-    fn catsdslen(s: *mut u8) -> usize;
 }
 
-#[derive(Copy)]
+unsafe fn catsdsavail(s: *mut u8) -> usize {
+    let sh: *const sdshdr = (s as usize - mem::size_of::<sdshdr>()) as *const sdshdr;
+    return (*sh).free as usize;
+}
+
+unsafe fn catsdslen(s: *mut u8) -> usize {
+    let sh: *const sdshdr = (s as usize - mem::size_of::<sdshdr>()) as *const sdshdr;
+    return (*sh).len as usize;
+}
+
 #[repr(C)]
 pub struct sdshdr {
     pub len: u32,
     pub free: u32,
-    pub buf: *mut c_char,
+    pub buf: [c_char; 1],
 }
 
-impl Clone for sdshdr {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn catsdsnewlen(
-    mut init: *const ::std::os::raw::c_void,
-    mut initlen: usize,
-) -> *mut u8 {
-    let mut sh: *mut sdshdr;
+pub unsafe fn catsdsnewlen(mut init: *const ::std::os::raw::c_void, mut initlen: usize) -> *mut u8 {
+    let mut sh: *mut sdshdr = mem::uninitialized();
     if !init.is_null() {
         sh = malloc(
             ::std::mem::size_of::<sdshdr>()
@@ -44,17 +42,25 @@ pub unsafe extern "C" fn catsdsnewlen(
             1usize,
         ) as (*mut sdshdr);
     }
-    if sh == 0i32 as (*mut ::std::os::raw::c_void) as (*mut sdshdr) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+    if sh.is_null() {
+        ptr::null_mut()
     } else {
         (*sh).len = initlen as (u32);
         (*sh).free = 0u32;
-        0i32 as (*mut u8)
+        // (*sh).buf = mem::uninitialized();
+        println!("{}", initlen);
+        printf(b"test %d\0".as_ptr() as *const i8, 4);
+        if initlen != 0 && !init.is_null() {
+            memcpy(((*sh).buf.as_ptr()) as (*mut c_void), init, initlen);
+        }
+        // *((sh as usize + initlen) as *mut c_char) = '\0' as i8;
+        (*sh).buf[initlen] = 0;
+        // println!("char: {:?}", (*sh).buf);
+        (*sh).buf.as_ptr() as *mut u8
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsnewEmpty(mut preAlloclen: usize) -> *mut u8 {
+pub unsafe fn catsdsnewEmpty(mut preAlloclen: usize) -> *mut u8 {
     let mut sh: *mut sdshdr;
     sh = malloc(
         ::std::mem::size_of::<sdshdr>()
@@ -70,23 +76,20 @@ pub unsafe extern "C" fn catsdsnewEmpty(mut preAlloclen: usize) -> *mut u8 {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsempty() -> *mut u8 {
+pub unsafe fn catsdsempty() -> *mut u8 {
     catsdsnewlen((*b"\0").as_ptr() as (*const ::std::os::raw::c_void), 0usize)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsnew(mut init: *const i8) -> *mut u8 {
-    let mut initlen: usize = if init == 0i32 as (*mut ::std::os::raw::c_void) as (*const i8) {
+pub unsafe fn catsdsnew(mut init: *const u8) -> *mut u8 {
+    let mut initlen: usize = if init.is_null() {
         0usize
     } else {
-        strlen(init)
+        strlen(init as *const i8)
     };
     catsdsnewlen(init as (*const ::std::os::raw::c_void), initlen)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsdup(s: *mut u8) -> *mut u8 {
+pub unsafe fn catsdsdup(s: *mut u8) -> *mut u8 {
     if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
         0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
     } else {
@@ -94,8 +97,7 @@ pub unsafe extern "C" fn catsdsdup(s: *mut u8) -> *mut u8 {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsfree(mut s: *mut u8) {
+pub unsafe fn catsdsfree(mut s: *mut u8) {
     if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
     } else {
         free(s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
@@ -103,8 +105,7 @@ pub unsafe extern "C" fn catsdsfree(mut s: *mut u8) {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsupdatelen(mut s: *mut u8) {
+pub unsafe fn catsdsupdatelen(mut s: *mut u8) {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     let mut reallen: i32 = strlen(s as (*const i8)) as (i32);
@@ -114,8 +115,7 @@ pub unsafe extern "C" fn catsdsupdatelen(mut s: *mut u8) {
     (*sh).len = reallen as (u32);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsclear(mut s: *mut u8) {
+pub unsafe fn catsdsclear(mut s: *mut u8) {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     (*sh).free = (*sh).free.wrapping_add((*sh).len);
@@ -123,8 +123,7 @@ pub unsafe extern "C" fn catsdsclear(mut s: *mut u8) {
     // sh->buf[0] = '\0'
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsMakeRoomFor(mut s: *mut u8, mut addlen: usize) -> *mut u8 {
+pub unsafe fn catsdsMakeRoomFor(mut s: *mut u8, mut addlen: usize) -> *mut u8 {
     let mut sh: *mut sdshdr;
     let mut newsh: *mut sdshdr;
     let mut free: usize = catsdsavail(s);
@@ -158,8 +157,7 @@ pub unsafe extern "C" fn catsdsMakeRoomFor(mut s: *mut u8, mut addlen: usize) ->
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsRemoveFreeSpace(mut s: *mut u8) -> *mut u8 {
+pub unsafe fn catsdsRemoveFreeSpace(mut s: *mut u8) -> *mut u8 {
     let mut sh: *mut sdshdr;
     sh = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize))) as (*mut ::std::os::raw::c_void)
         as (*mut sdshdr);
@@ -174,8 +172,7 @@ pub unsafe extern "C" fn catsdsRemoveFreeSpace(mut s: *mut u8) -> *mut u8 {
     0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsAllocSize(mut s: *mut u8) -> usize {
+pub unsafe fn catsdsAllocSize(mut s: *mut u8) -> usize {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     ::std::mem::size_of::<sdshdr>()
@@ -184,8 +181,7 @@ pub unsafe extern "C" fn catsdsAllocSize(mut s: *mut u8) -> usize {
         .wrapping_add(1usize)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsIncrLen(mut s: *mut u8, mut incr: i32) {
+pub unsafe fn catsdsIncrLen(mut s: *mut u8, mut incr: i32) {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     (*sh).len = (*sh).len.wrapping_add(incr as (u32));
@@ -193,8 +189,7 @@ pub unsafe extern "C" fn catsdsIncrLen(mut s: *mut u8, mut incr: i32) {
     *s.offset((*sh).len as (isize)) = b'\0';
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsgrowzero(mut s: *mut u8, mut len: usize) -> *mut u8 {
+pub unsafe fn catsdsgrowzero(mut s: *mut u8, mut len: usize) -> *mut u8 {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     let mut totlen: usize;
@@ -221,8 +216,7 @@ pub unsafe extern "C" fn catsdsgrowzero(mut s: *mut u8, mut len: usize) -> *mut 
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscatlen(
+pub unsafe fn catsdscatlen(
     mut s: *mut u8,
     mut t: *const ::std::os::raw::c_void,
     mut len: usize,
@@ -247,8 +241,7 @@ pub unsafe extern "C" fn catsdscatlen(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscatchar(mut s: *mut u8, mut c: u8) -> *mut u8 {
+pub unsafe fn catsdscatchar(mut s: *mut u8, mut c: u8) -> *mut u8 {
     let mut sh: *mut sdshdr;
     let mut curlen: usize = catsdslen(s);
     s = catsdsMakeRoomFor(s, 1usize);
@@ -265,8 +258,7 @@ pub unsafe extern "C" fn catsdscatchar(mut s: *mut u8, mut c: u8) -> *mut u8 {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscat(mut s: *mut u8, mut t: *const u8) -> *mut u8 {
+pub unsafe fn catsdscat(mut s: *mut u8, mut t: *const u8) -> *mut u8 {
     if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
         || t == 0i32 as (*mut ::std::os::raw::c_void) as (*const u8)
     {
@@ -280,13 +272,11 @@ pub unsafe extern "C" fn catsdscat(mut s: *mut u8, mut t: *const u8) -> *mut u8 
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscatsds(mut s: *mut u8, t: *mut u8) -> *mut u8 {
+pub unsafe fn catsdscatsds(mut s: *mut u8, t: *mut u8) -> *mut u8 {
     catsdscatlen(s, t as (*const ::std::os::raw::c_void), catsdslen(t))
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscpylen(mut s: *mut u8, mut t: *const u8, mut len: usize) -> *mut u8 {
+pub unsafe fn catsdscpylen(mut s: *mut u8, mut t: *const u8, mut len: usize) -> *mut u8 {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     let mut totlen: usize = (*sh).free.wrapping_add((*sh).len) as (usize);
@@ -311,13 +301,11 @@ pub unsafe extern "C" fn catsdscpylen(mut s: *mut u8, mut t: *const u8, mut len:
     s
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscpy(mut s: *mut u8, mut t: *const u8) -> *mut u8 {
+pub unsafe fn catsdscpy(mut s: *mut u8, mut t: *const u8) -> *mut u8 {
     catsdscpylen(s, t, strlen(t as *const i8))
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn sdsll2str(mut s: *mut u8, mut value: isize) -> i32 {
+pub unsafe fn sdsll2str(mut s: *mut u8, mut value: isize) -> i32 {
     let mut p: *mut u8;
     let mut aux: u8;
     let mut v: usize;
@@ -359,8 +347,7 @@ pub unsafe extern "C" fn sdsll2str(mut s: *mut u8, mut value: isize) -> i32 {
     l as (i32)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn sdsull2str(mut s: *mut u8, mut v: usize) -> i32 {
+pub unsafe fn sdsull2str(mut s: *mut u8, mut v: usize) -> i32 {
     let mut p: *mut u8;
     let mut aux: u8;
     let mut l: usize;
@@ -393,8 +380,7 @@ pub unsafe extern "C" fn sdsull2str(mut s: *mut u8, mut v: usize) -> i32 {
     l as (i32)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsfromlonglong(mut value: isize) -> *mut u8 {
+pub unsafe fn catsdsfromlonglong(mut value: isize) -> *mut u8 {
     let mut buf: [u8; 21] = mem::uninitialized();
     let mut len: i32 = sdsll2str(buf.as_mut_ptr(), value);
     catsdsnewlen(
@@ -403,8 +389,7 @@ pub unsafe extern "C" fn catsdsfromlonglong(mut value: isize) -> *mut u8 {
     )
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdstrim(mut s: *mut u8, mut cset: *const i8) -> *mut u8 {
+pub unsafe fn catsdstrim(mut s: *mut u8, mut cset: *const i8) -> *mut u8 {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     let mut start: *mut u8;
@@ -446,8 +431,7 @@ pub unsafe extern "C" fn catsdstrim(mut s: *mut u8, mut cset: *const i8) -> *mut
     s
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsrange(mut s: *mut u8, mut start: i32, mut end: i32) {
+pub unsafe fn catsdsrange(mut s: *mut u8, mut start: i32, mut end: i32) {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     let mut newlen: usize;
@@ -494,8 +478,7 @@ pub unsafe extern "C" fn catsdsrange(mut s: *mut u8, mut start: i32, mut end: i3
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdstolower(mut s: *mut u8) {
+pub unsafe fn catsdstolower(mut s: *mut u8) {
     let mut len: i32 = catsdslen(s) as (i32);
     let mut j: i32;
     j = 0i32;
@@ -508,8 +491,7 @@ pub unsafe extern "C" fn catsdstolower(mut s: *mut u8) {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdstoupper(mut s: *mut u8) {
+pub unsafe fn catsdstoupper(mut s: *mut u8) {
     let mut len: i32 = catsdslen(s) as (i32);
     let mut j: i32;
     j = 0i32;
@@ -522,8 +504,7 @@ pub unsafe extern "C" fn catsdstoupper(mut s: *mut u8) {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscmp(s1: *mut u8, s2: *mut u8) -> i32 {
+pub unsafe fn catsdscmp(s1: *mut u8, s2: *mut u8) -> i32 {
     let mut l1: usize;
     let mut l2: usize;
     let mut minlen: usize;
@@ -543,8 +524,7 @@ pub unsafe extern "C" fn catsdscmp(s1: *mut u8, s2: *mut u8) -> i32 {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdssplitlen(
+pub unsafe fn catsdssplitlen(
     mut s: *const u8,
     mut len: i32,
     mut sep: *const u8,
@@ -640,8 +620,7 @@ pub unsafe extern "C" fn catsdssplitlen(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsfreesplitres(mut tokens: *mut *mut u8, mut count: i32) {
+pub unsafe fn catsdsfreesplitres(mut tokens: *mut *mut u8, mut count: i32) {
     if tokens.is_null() {
     } else {
         'loop1: loop {
@@ -659,12 +638,7 @@ pub unsafe extern "C" fn catsdsfreesplitres(mut tokens: *mut *mut u8, mut count:
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdscatrepr(
-    mut s: *mut u8,
-    mut p: *const u8,
-    mut len: usize,
-) -> *mut u8 {
+pub unsafe fn catsdscatrepr(mut s: *mut u8, mut p: *const u8, mut len: usize) -> *mut u8 {
     s = catsdscatlen(
         s,
         (*b"\"\0").as_ptr() as (*const ::std::os::raw::c_void),
@@ -726,15 +700,13 @@ pub unsafe extern "C" fn catsdscatrepr(
     )
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn is_hex_digit(mut c: u8) -> i32 {
+pub unsafe fn is_hex_digit(mut c: u8) -> i32 {
     (c as (i32) >= b'0' as (i32) && (c as (i32) <= b'9' as (i32))
         || c as (i32) >= b'a' as (i32) && (c as (i32) <= b'f' as (i32))
         || c as (i32) >= b'A' as (i32) && (c as (i32) <= b'F' as (i32))) as (i32)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn hex_digit_to_int(mut c: u8) -> i32 {
+pub unsafe fn hex_digit_to_int(mut c: u8) -> i32 {
     if c as (i32) == b'F' as (i32) || c as (i32) == b'f' as (i32) {
         15i32
     } else if c as (i32) == b'E' as (i32) || c as (i32) == b'e' as (i32) {
@@ -772,8 +744,7 @@ pub unsafe extern "C" fn hex_digit_to_int(mut c: u8) -> i32 {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32) -> *mut *mut u8 {
+pub unsafe fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32) -> *mut *mut u8 {
     let mut _currentBlock;
     let mut p: *const u8 = line;
     let mut current: *mut u8 = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
@@ -931,8 +902,7 @@ pub unsafe extern "C" fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsmapchars(
+pub unsafe fn catsdsmapchars(
     mut s: *mut u8,
     mut from: *const u8,
     mut to: *const u8,
@@ -967,12 +937,7 @@ pub unsafe extern "C" fn catsdsmapchars(
     s
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn catsdsjoin(
-    mut argv: *mut *mut u8,
-    mut argc: i32,
-    mut sep: *mut u8,
-) -> *mut u8 {
+pub unsafe fn catsdsjoin(mut argv: *mut *mut u8, mut argc: i32, mut sep: *mut u8) -> *mut u8 {
     let mut join: *mut u8 = catsdsempty();
     let mut j: i32;
     j = 0i32;

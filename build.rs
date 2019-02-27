@@ -10,6 +10,7 @@ fn main() {
         .file("ccat/lib/cat_ccmap.c")
         .file("ccat/lib/cat_clog.c")
         .file("ccat/lib/cat_dict.c")
+        .file("ccat/lib/cat_ezxml.c")
         .file("ccat/lib/cat_json.c")
         .file("ccat/lib/cat_mpsc_queue.c")
         .file("ccat/lib/cat_network_util.c")

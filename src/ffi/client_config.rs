@@ -1,6 +1,9 @@
 use super::raw::CatClientConfig;
 use super::raw::CatClientInnerConfig;
+use super::sds::catsdscpy;
+use super::sds::catsdsfree;
 use super::sds::catsdsnew;
+use super::sds::catsdsnewEmpty;
 use libc::c_void;
 use libc::free;
 use libc::malloc;
@@ -12,10 +15,6 @@ use std::ptr::null_mut;
 
 extern "C" {
     fn catAnetGetHost(err: *mut u8, host: *mut u8, ipbuf_len: usize) -> i32;
-    fn catsdscpy(s: *mut u8, t: *const u8) -> *mut u8;
-    fn catsdsfree(s: *mut u8);
-    // fn catsdsnew(init: *const u8) -> *mut u8;
-    fn catsdsnewEmpty(preAlloclen: usize) -> *mut u8;
     static mut g_log_debug: i32;
     static mut g_log_file_perDay: i32;
     static mut g_log_file_with_time: i32;

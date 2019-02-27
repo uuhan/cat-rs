@@ -1,6 +1,6 @@
 use libc::{
-    c_char, c_void, calloc, free, isprint, isspace, malloc, memcmp, memcpy, memset, printf,
-    realloc, strchr, strlen, tolower, toupper,
+    c_char, c_void, calloc, free, isprint, isspace, malloc, memcmp, memcpy, memmove, memset,
+    printf, realloc, strchr, strlen, tolower, toupper,
 };
 use std::mem;
 use std::ptr;
@@ -9,13 +9,15 @@ extern "C" {
     fn catsdscatprintf(s: *mut u8, fmt: *const u8, ...) -> *mut u8;
 }
 
+#[inline]
 unsafe fn catsdsavail(s: *mut u8) -> usize {
-    let sh: *const sdshdr = (s as usize - mem::size_of::<sdshdr>()) as *const sdshdr;
+    let sh: *const sdshdr = s.offset(-(mem::size_of::<sdshdr>() as isize)) as *const sdshdr;
     return (*sh).free as usize;
 }
 
+#[inline]
 unsafe fn catsdslen(s: *mut u8) -> usize {
-    let sh: *const sdshdr = (s as usize - mem::size_of::<sdshdr>()) as *const sdshdr;
+    let sh: *const sdshdr = s.offset(-(mem::size_of::<sdshdr>() as isize)) as *const sdshdr;
     return (*sh).len as usize;
 }
 
@@ -23,7 +25,7 @@ unsafe fn catsdslen(s: *mut u8) -> usize {
 pub struct sdshdr {
     pub len: u32,
     pub free: u32,
-    pub buf: [c_char; 256],
+    pub buf: [c_char; 0],
 }
 
 pub unsafe fn catsdsnewlen(mut init: *const ::std::os::raw::c_void, mut initlen: usize) -> *mut u8 {
@@ -45,12 +47,13 @@ pub unsafe fn catsdsnewlen(mut init: *const ::std::os::raw::c_void, mut initlen:
     if sh.is_null() {
         ptr::null_mut()
     } else {
-        (*sh).len = initlen as (u32);
-        (*sh).free = 0u32;
+        (*sh).len = initlen as u32;
+        (*sh).free = 0;
+        let ptr = mem::transmute::<&[c_char; 0], *mut c_char>(&(*sh).buf);
         if initlen != 0 && !init.is_null() {
-            memcpy(((*sh).buf.as_ptr()) as (*mut c_void), init, initlen);
+            memcpy(ptr as *mut c_void, init, initlen);
         }
-        (*sh).buf[initlen] = 0;
+        *ptr.offset(initlen as isize) = 0;
         (*sh).buf.as_ptr() as *mut u8
     }
 }
@@ -62,12 +65,14 @@ pub unsafe fn catsdsnewEmpty(mut preAlloclen: usize) -> *mut u8 {
             .wrapping_add(preAlloclen)
             .wrapping_add(1usize),
     ) as (*mut sdshdr);
-    if sh == 0i32 as (*mut ::std::os::raw::c_void) as (*mut sdshdr) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+    if sh.is_null() {
+        ptr::null_mut()
     } else {
         (*sh).len = 0u32;
         (*sh).free = preAlloclen as (u32);
-        0i32 as (*mut u8)
+        let ptr = mem::transmute::<&[c_char; 0], *mut c_char>(&(*sh).buf);
+        *ptr = 0;
+        mem::transmute::<&[c_char; 0], *mut u8>(&(*sh).buf)
     }
 }
 
@@ -85,15 +90,15 @@ pub unsafe fn catsdsnew(mut init: *const u8) -> *mut u8 {
 }
 
 pub unsafe fn catsdsdup(s: *mut u8) -> *mut u8 {
-    if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+    if s.is_null() {
+        ptr::null_mut()
     } else {
         catsdsnewlen(s as (*const ::std::os::raw::c_void), catsdslen(s))
     }
 }
 
 pub unsafe fn catsdsfree(mut s: *mut u8) {
-    if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
+    if s.is_null() {
     } else {
         free(s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
             as (*mut ::std::os::raw::c_void));
@@ -115,7 +120,8 @@ pub unsafe fn catsdsclear(mut s: *mut u8) {
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     (*sh).free = (*sh).free.wrapping_add((*sh).len);
     (*sh).len = 0u32;
-    // sh->buf[0] = '\0'
+    let ptr = mem::transmute::<&[c_char; 0], *mut c_char>(&(*sh).buf);
+    *ptr = 0;
 }
 
 pub unsafe fn catsdsMakeRoomFor(mut s: *mut u8, mut addlen: usize) -> *mut u8 {
@@ -131,10 +137,10 @@ pub unsafe fn catsdsMakeRoomFor(mut s: *mut u8, mut addlen: usize) -> *mut u8 {
         sh = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
             as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
         newlen = len.wrapping_add(addlen);
-        if newlen < (1024i32 * 1024i32) as (usize) {
+        if newlen < (1024 * 1024) as (usize) {
             newlen = newlen.wrapping_mul(2usize);
         } else {
-            newlen = newlen.wrapping_add((1024i32 * 1024i32) as (usize));
+            newlen = newlen.wrapping_add((1024 * 1024) as (usize));
         }
         newsh = realloc(
             sh as (*mut ::std::os::raw::c_void),
@@ -142,12 +148,11 @@ pub unsafe fn catsdsMakeRoomFor(mut s: *mut u8, mut addlen: usize) -> *mut u8 {
                 .wrapping_add(newlen)
                 .wrapping_add(1usize),
         ) as (*mut sdshdr);
-        (if newsh == 0i32 as (*mut ::std::os::raw::c_void) as (*mut sdshdr) {
-            0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+        (if newsh.is_null() {
+            ptr::null_mut()
         } else {
             (*newsh).free = newlen.wrapping_sub(len) as (u32);
-            // return newsh->buf;
-            0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+            mem::transmute::<&[c_char; 0], *mut u8>(&(*newsh).buf)
         })
     }
 }
@@ -163,8 +168,7 @@ pub unsafe fn catsdsRemoveFreeSpace(mut s: *mut u8) -> *mut u8 {
             .wrapping_add(1usize),
     ) as (*mut sdshdr);
     (*sh).free = 0u32;
-    // return sh->buf
-    0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+    mem::transmute::<&[c_char; 0], *mut u8>(&(*sh).buf)
 }
 
 pub unsafe fn catsdsAllocSize(mut s: *mut u8) -> usize {
@@ -193,8 +197,8 @@ pub unsafe fn catsdsgrowzero(mut s: *mut u8, mut len: usize) -> *mut u8 {
         s
     } else {
         s = catsdsMakeRoomFor(s, len.wrapping_sub(curlen));
-        (if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
-            0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+        (if s.is_null() {
+            ptr::null_mut()
         } else {
             sh = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
                 as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
@@ -219,8 +223,8 @@ pub unsafe fn catsdscatlen(
     let mut sh: *mut sdshdr;
     let mut curlen: usize = catsdslen(s);
     s = catsdsMakeRoomFor(s, len);
-    if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+    if s.is_null() {
+        ptr::null_mut()
     } else {
         sh = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
             as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
@@ -240,8 +244,8 @@ pub unsafe fn catsdscatchar(mut s: *mut u8, mut c: u8) -> *mut u8 {
     let mut sh: *mut sdshdr;
     let mut curlen: usize = catsdslen(s);
     s = catsdsMakeRoomFor(s, 1usize);
-    if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
+    if s.is_null() {
+        ptr::null_mut()
     } else {
         sh = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
             as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
@@ -254,9 +258,7 @@ pub unsafe fn catsdscatchar(mut s: *mut u8, mut c: u8) -> *mut u8 {
 }
 
 pub unsafe fn catsdscat(mut s: *mut u8, mut t: *const u8) -> *mut u8 {
-    if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-        || t == 0i32 as (*mut ::std::os::raw::c_void) as (*const u8)
-    {
+    if s.is_null() || t.is_null() {
         s
     } else {
         catsdscatlen(
@@ -277,8 +279,8 @@ pub unsafe fn catsdscpylen(mut s: *mut u8, mut t: *const u8, mut len: usize) -> 
     let mut totlen: usize = (*sh).free.wrapping_add((*sh).len) as (usize);
     if totlen < len {
         s = catsdsMakeRoomFor(s, len.wrapping_sub((*sh).len as (usize)));
-        if s == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
-            return 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
+        if s.is_null() {
+            return ptr::null_mut();
         } else {
             sh = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
                 as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
@@ -384,7 +386,7 @@ pub unsafe fn catsdsfromlonglong(mut value: isize) -> *mut u8 {
     )
 }
 
-pub unsafe fn catsdstrim(mut s: *mut u8, mut cset: *const i8) -> *mut u8 {
+pub unsafe fn catsdstrim(mut s: *mut u8, mut cset: *const u8) -> *mut u8 {
     let mut sh: *mut sdshdr = s.offset(-(::std::mem::size_of::<sdshdr>() as (isize)))
         as (*mut ::std::os::raw::c_void) as (*mut sdshdr);
     let mut start: *mut u8;
@@ -401,13 +403,13 @@ pub unsafe fn catsdstrim(mut s: *mut u8, mut cset: *const i8) -> *mut u8 {
         end
     };
     'loop1: loop {
-        if !(sp <= end && !strchr(cset, *sp as (i32)).is_null()) {
+        if !(sp <= end && !strchr(cset as *const i8, *sp as (i32)).is_null()) {
             break;
         }
         sp = sp.offset(1isize);
     }
     'loop2: loop {
-        if !(ep > start && !strchr(cset, *ep as (i32)).is_null()) {
+        if !(ep > start && !strchr(cset as *const i8, *ep as (i32)).is_null()) {
             break;
         }
         ep = ep.offset(-1isize);
@@ -418,8 +420,11 @@ pub unsafe fn catsdstrim(mut s: *mut u8, mut cset: *const i8) -> *mut u8 {
         (ep as (isize)).wrapping_sub(sp as (isize)) / ::std::mem::size_of::<u8>() as (isize)
             + 1isize
     } as (usize);
-    // if (sh->buf != sp) memmove(sh->buf, sp, len);
-    // sh-buf[len] = '\0'
+    let ptr = mem::transmute::<&[c_char; 0], *mut c_char>(&(*sh).buf);
+    if ptr != sp as *mut c_char {
+        memmove(ptr as *mut c_void, sp as *mut c_void, len);
+    }
+    *ptr.offset(len as isize) = 0;
     (*sh).free =
         ((*sh).free as (usize)).wrapping_add(((*sh).len as (usize)).wrapping_sub(len)) as (u32);
     (*sh).len = len as (u32);
@@ -464,8 +469,15 @@ pub unsafe fn catsdsrange(mut s: *mut u8, mut start: i32, mut end: i32) {
         } else {
             start = 0i32;
         }
-        // if (start && newlen) memmove(sh->buf, sh->buf + start, newlen);
-        // sh->buf[newlen] = 0;
+        let ptr = mem::transmute::<&[c_char; 0], *mut c_char>(&(*sh).buf);
+        if start != 0 && newlen != 0 {
+            memmove(
+                ptr as *mut c_void,
+                ptr.offset(start as isize) as *mut c_void,
+                newlen,
+            );
+        }
+        *ptr.offset(newlen as isize) = 0;
         (*sh).free = ((*sh).free as (usize))
             .wrapping_add(((*sh).len as (usize)).wrapping_sub(newlen))
             as (u32);
@@ -533,12 +545,12 @@ pub unsafe fn catsdssplitlen(
     let mut j: i32;
     let mut tokens: *mut *mut u8;
     if seplen < 1i32 || len < 0i32 {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8)
+        ptr::null_mut()
     } else {
         tokens = malloc(::std::mem::size_of::<*mut u8>().wrapping_mul(slots as (usize)))
             as (*mut *mut u8);
-        (if tokens == 0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8) {
-            0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8)
+        (if tokens.is_null() {
+            ptr::null_mut()
         } else if len == 0i32 {
             *count = 0i32;
             tokens
@@ -556,7 +568,7 @@ pub unsafe fn catsdssplitlen(
                         tokens as (*mut ::std::os::raw::c_void),
                         ::std::mem::size_of::<*mut u8>().wrapping_mul(slots as (usize)),
                     ) as (*mut *mut u8);
-                    if newtokens == 0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8) {
+                    if newtokens.is_null() {
                         _currentBlock = 14;
                         break;
                     }
@@ -574,9 +586,7 @@ pub unsafe fn catsdssplitlen(
                         s.offset(start as (isize)) as (*const ::std::os::raw::c_void),
                         (j - start) as (usize),
                     );
-                    if *tokens.offset(elements as (isize))
-                        == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8)
-                    {
+                    if (*tokens.offset(elements as (isize))).is_null() {
                         _currentBlock = 14;
                         break;
                     }
@@ -591,9 +601,7 @@ pub unsafe fn catsdssplitlen(
                     s.offset(start as (isize)) as (*const ::std::os::raw::c_void),
                     (len - start) as (usize),
                 );
-                if !(*tokens.offset(elements as (isize))
-                    == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8))
-                {
+                if !(*tokens.offset(elements as (isize))).is_null() {
                     elements = elements + 1;
                     *count = elements;
                     return tokens;
@@ -610,7 +618,7 @@ pub unsafe fn catsdssplitlen(
             }
             free(tokens as (*mut ::std::os::raw::c_void));
             *count = 0i32;
-            0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8)
+            ptr::null_mut()
         })
     }
 }
@@ -742,8 +750,8 @@ pub unsafe fn hex_digit_to_int(mut c: u8) -> i32 {
 pub unsafe fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32) -> *mut *mut u8 {
     let mut _currentBlock;
     let mut p: *const u8 = line;
-    let mut current: *mut u8 = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
-    let mut vector: *mut *mut u8 = 0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8);
+    let mut current: *mut u8 = ptr::null_mut();
+    let mut vector: *mut *mut u8 = ptr::null_mut();
     *argc = 0i32;
     'loop1: loop {
         if *p != 0 && (isspace(*p as (i32)) != 0) {
@@ -756,7 +764,7 @@ pub unsafe fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32) -> *mut *
             let mut inq: i32 = 0i32;
             let mut insq: i32 = 0i32;
             let mut done: i32 = 0i32;
-            if current == 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8) {
+            if current.is_null() {
                 current = catsdsempty();
             }
             'loop8: loop {
@@ -868,11 +876,11 @@ pub unsafe fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32) -> *mut *
             ) as (*mut *mut u8);
             *vector.offset(*argc as (isize)) = current;
             *argc = *argc + 1;
-            current = 0i32 as (*mut ::std::os::raw::c_void) as (*mut u8);
+            current = ptr::null_mut();
         }
     }
     if _currentBlock == 3 {
-        if vector == 0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8) {
+        if vector.is_null() {
             vector = malloc(::std::mem::size_of::<*mut ::std::os::raw::c_void>()) as (*mut *mut u8);
         }
         vector
@@ -893,7 +901,7 @@ pub unsafe fn catsdssplitargs(mut line: *const u8, mut argc: *mut i32) -> *mut *
             catsdsfree(current);
         }
         *argc = 0i32;
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut u8)
+        ptr::null_mut()
     }
 }
 

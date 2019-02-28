@@ -1,5 +1,6 @@
 [package]
 name = "cat-rs"
+description = "cat client with rust"
 version = "0.2.1"
 license = "MIT"
 authors = ["uuhan <xuminhui189@gmail.com>"]

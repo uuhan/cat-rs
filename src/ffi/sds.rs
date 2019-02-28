@@ -9,6 +9,13 @@ extern "C" {
     fn catsdscatprintf(s: *mut u8, fmt: *const u8, ...) -> *mut u8;
 }
 
+#[repr(C)]
+pub struct sdshdr {
+    pub len: u32,
+    pub free: u32,
+    pub buf: [c_char; 0],
+}
+
 #[inline]
 unsafe fn catsdsavail(s: *mut u8) -> usize {
     let sh: *const sdshdr = s.offset(-(mem::size_of::<sdshdr>() as isize)) as *const sdshdr;
@@ -19,13 +26,6 @@ unsafe fn catsdsavail(s: *mut u8) -> usize {
 unsafe fn catsdslen(s: *mut u8) -> usize {
     let sh: *const sdshdr = s.offset(-(mem::size_of::<sdshdr>() as isize)) as *const sdshdr;
     return (*sh).len as usize;
-}
-
-#[repr(C)]
-pub struct sdshdr {
-    pub len: u32,
-    pub free: u32,
-    pub buf: [c_char; 0],
 }
 
 pub unsafe fn catsdsnewlen(mut init: *const ::std::os::raw::c_void, mut initlen: usize) -> *mut u8 {
@@ -966,6 +966,7 @@ mod tests {
         unsafe {
             let t: *mut u8 = catsdsnew("Hello, Word!".as_ptr() as *mut u8);
             assert_eq!(t.is_null(), false);
+            assert_eq!(std::mem::size_of::<sdshdr>(), 8);
             catsdsfree(t);
         }
     }

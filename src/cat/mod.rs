@@ -4,12 +4,21 @@ use crate::ffi::raw::*;
 use crate::ffi::*;
 use std::ffi::CString;
 
+/// cat client
 pub struct CatClient {
+    /// client initialization key
     appkey: String,
+    /// client config
     config: CatClientConfig,
 }
 
 impl CatClient {
+    /// create a new cat client
+    ///
+    /// # Arguments
+    ///
+    /// * `appkey` - key which impl ToString
+    ///
     pub fn new<T: ToString>(appkey: T) -> Self {
         CatClient {
             appkey: appkey.to_string(),
@@ -17,11 +26,13 @@ impl CatClient {
         }
     }
 
+    /// set cat client config
     pub fn config(&mut self, config: &mut CatClientConfig) -> &Self {
         self.config = *config;
         self
     }
 
+    /// initialize cat client
     pub fn init(&mut self) -> &Self {
         unsafe {
             catClientInitWithConfig(
@@ -32,11 +43,13 @@ impl CatClient {
         }
     }
 
+    /// destroy a cat client
     pub fn destroy(&self) {
         warn!("cat client is being destroyed!");
         unsafe { catClientDestroy() };
     }
 
+    /// get cat client version
     pub fn version(&self) -> &str {
         cat_version()
     }
@@ -49,6 +62,23 @@ impl Drop for CatClient {
     }
 }
 
+/// log a cat event
+///
+/// # Arguments
+///
+/// * `type_` - event type
+///
+/// * `name_` - event name
+///
+/// * `status` - event status type "0" or other
+///
+/// * `data` - event data
+///
+/// # Example
+///
+/// ```rust,no_run
+/// // logEvent("app", "foo", "0", "");
+/// ```
 pub fn logEvent<S: ToString>(type_: S, name_: S, status: S, data: S) {
     unsafe {
         crate::ffi::logEvent(

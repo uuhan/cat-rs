@@ -1,3 +1,4 @@
+use super::helper::GetTime64;
 use super::raw::{
     CATStaticQueue, CatClientInnerConfig, CatMessage, CatMessageInner, CatTransaction,
     CatTransactionInner,
@@ -25,7 +26,14 @@ extern "C" {
     ) -> i32;
 }
 
-unsafe extern "C" fn addDataPairNull(mut message: *mut CatTransaction, mut data: *const u8) {}
+fn addDataPairNull(mut message: *mut CatTransaction, mut data: *const u8) {}
+fn addKVNull(mut message: *mut CatTransaction, mut dataKey: *const u8, mut dataValue: *const u8) {}
+fn setStatusNull(mut message: *mut CatTransaction, mut status: *const u8) {}
+fn setTimestampNull(mut message: *mut CatTransaction, mut timestamp: u64) {}
+fn setCompleteNull(mut message: *mut CatTransaction) {}
+fn addChildNull(mut message: *mut CatTransaction, mut childMsg: *const CatMessage) {}
+fn setDurationInMillisNull(mut trans: *mut CatTransaction, mut duration: u64) {}
+fn setDurationStartNull(mut trans: *mut CatTransaction, mut durationStart: u64) {}
 
 // pub static mut g_cat_nullTrans: CatTransaction = addDataPairNull as (CatTransaction);
 
@@ -71,17 +79,6 @@ pub unsafe extern "C" fn getCatTransactionChildren(
         .offset(-(::std::mem::size_of::<CatTransactionInner>() as (isize)))
         as (*mut CatTransactionInner);
     (*pInner).children
-}
-
-unsafe extern "C" fn GetTime64() -> usize {
-    let mut buf: usize;
-    let mut tv: timeval = mem::uninitialized();
-    gettimeofday(
-        &mut tv as (*mut timeval),
-        0i32 as (*mut ::std::os::raw::c_void),
-    );
-    buf = (tv.tv_sec * 1000 + (tv.tv_usec / 1000) as i64) as (usize);
-    buf
 }
 
 unsafe extern "C" fn setTransactionComplete(mut message: *mut CatTransaction) {

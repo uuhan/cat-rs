@@ -18,6 +18,7 @@ mod mac;
 
 mod client_config;
 pub mod config;
+pub(crate) mod helper;
 pub(crate) mod raw;
 mod sds;
 pub(crate) mod transaction;
@@ -25,6 +26,7 @@ pub(crate) mod transaction;
 use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;
 use config::ClientConfig;
+use helper::GetTime64;
 pub use raw::CatClientConfig;
 pub use raw::CatClientInnerConfig;
 pub use raw::CatMessage;
@@ -232,14 +234,6 @@ pub unsafe fn newTransaction(type_: String, name: String) -> *mut CatTransaction
     } else {
         &mut CatTransaction::default()
     }
-}
-
-pub unsafe fn GetTime64() -> usize {
-    let buf: usize;
-    let mut tv: timeval = mem::uninitialized();
-    gettimeofday(&mut tv, ptr::null_mut());
-    buf = (tv.tv_sec * 1000 + (tv.tv_usec / 1000) as (i64)) as (usize);
-    buf
 }
 
 pub unsafe fn newTransactionWithDuration(

@@ -237,7 +237,7 @@ pub unsafe fn GetTime64() -> usize {
     let buf: usize;
     let mut tv: timeval = mem::uninitialized();
     gettimeofday(&mut tv, ptr::null_mut());
-    buf = (tv.tv_sec * 1000i64 + (tv.tv_usec / 1000i32) as (i64)) as (usize);
+    buf = (tv.tv_sec * 1000 + (tv.tv_usec / 1000) as (i64)) as (usize);
     buf
 }
 
@@ -248,7 +248,7 @@ pub unsafe fn newTransactionWithDuration(
 ) -> *mut CatTransaction {
     let trans: *mut CatTransaction = newTransaction(type_, name);
     ((*trans).setDurationInMillis)(trans, duration);
-    if duration < (60i32 * 1000i32) as (usize) {
+    if duration < (60i32 * 1000) as (usize) {
         ((*trans).setTimestamp)(trans, GetTime64().wrapping_sub(duration));
     }
     trans

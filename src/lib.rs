@@ -1,6 +1,8 @@
 extern crate libc;
 #[macro_use]
 extern crate log;
+extern crate serde;
+extern crate serde_json;
 
 #[macro_use]
 pub(crate) mod ffi;

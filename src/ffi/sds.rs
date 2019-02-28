@@ -80,6 +80,18 @@ pub unsafe fn catsdsempty() -> *mut u8 {
     catsdsnewlen((*b"\0").as_ptr() as (*const ::std::os::raw::c_void), 0usize)
 }
 
+/// Create a new sds string starting from a null terminated C string.
+///
+/// # Arguments
+///
+/// * `init` - null terminated C string
+///
+/// # Example
+///
+/// ```rust,no_run
+/// // let sds = self::catsdsnew("Hello, World!".as_ptr());
+/// ```
+///
 pub unsafe fn catsdsnew(mut init: *const u8) -> *mut u8 {
     let mut initlen: usize = if init.is_null() {
         0usize

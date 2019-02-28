@@ -956,3 +956,17 @@ pub unsafe fn catsdsjoin(mut argv: *mut *mut u8, mut argc: i32, mut sep: *mut u8
     }
     join
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sds_malloc_free() {
+        unsafe {
+            let t: *mut u8 = catsdsnew("Hello, Word!".as_ptr() as *mut u8);
+            assert_eq!(t.is_null(), false);
+            catsdsfree(t);
+        }
+    }
+}

@@ -221,3 +221,61 @@ impl CatTransaction {
         self
     }
 }
+
+#[derive(Copy)]
+#[repr(C)]
+pub struct CATStaticQueue {
+    pub maxQueueSize: usize,
+    pub head: i32,
+    pub tail: i32,
+    pub size: usize,
+    pub valueArray: [*mut ::std::os::raw::c_void; 0],
+}
+
+impl Clone for CATStaticQueue {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+#[derive(Copy)]
+pub enum Union1 {}
+
+impl Clone for Union1 {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+#[derive(Copy)]
+#[repr(C)]
+pub struct CatMessageInner {
+    pub messageType: Union1,
+    pub type_: *mut u8,
+    pub name: *mut u8,
+    pub status: *mut u8,
+    pub data: *mut u8,
+    pub timestampMs: usize,
+    pub isComplete: i32,
+}
+
+impl Clone for CatMessageInner {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+#[derive(Copy)]
+#[repr(C)]
+pub struct CatTransactionInner {
+    pub children: *mut CATStaticQueue,
+    pub durationStart: usize,
+    pub durationUs: usize,
+    pub message: CatMessageInner,
+}
+
+impl Clone for CatTransactionInner {
+    fn clone(&self) -> Self {
+        *self
+    }
+}

@@ -163,7 +163,15 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
 
+        // TODO: setup host & ip
+        assert!(conf.servers.len() > 0);
+        let ip = &conf.servers[0].ip;
+        let port = conf.servers[0].port;
+        let httpPort = conf.servers[0].httpPort;
+
         g_config.appkey = catsdsnew(appkey);
+        g_config.serverHost = catsdsnew(b"47.88.131.78\0".as_ptr() as *const u8);
+
         initMessageManager(appkey, g_config.selfHost);
         initMessageIdHelper();
         if initCatServerConnManager() == 0 {

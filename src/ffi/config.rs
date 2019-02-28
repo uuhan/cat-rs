@@ -3,15 +3,15 @@ use serde_json::Result;
 
 #[derive(Serialize, Deserialize)]
 pub struct ClientConfig {
-    servers: Vec<ServerConfig>,
+    pub servers: Vec<ServerConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ServerConfig {
-    ip: String,
-    port: u16,
+    pub ip: String,
+    pub port: u16,
     #[serde(rename(deserialize = "http-port"))]
-    httpPort: u16,
+    pub httpPort: u16,
 }
 
 #[cfg(test)]

@@ -1,16 +1,12 @@
+use super::raw::CatMessage;
+use super::raw::CatTransaction;
+use super::sds::catsdsdup;
+use libc::{gettimeofday, malloc, timeval};
+use std::mem;
+
 extern "C" {
-    fn CLogLogWithLocation(
-        type_: u16,
-        format: *const u8,
-        file: *const u8,
-        line: i32,
-        function: *const u8,
-        ...
-    );
-    fn __swbuf(arg1: i32, arg2: *mut __sFILE) -> i32;
-    fn catMessageManagerEndTrans(trans: *mut _CatTransaction);
-    fn catsdsdup(s: *mut u8) -> *mut u8;
-    fn clearMessage(message: *mut _CatMessage) -> *mut ::std::os::raw::c_void;
+    fn catMessageManagerEndTrans(trans: *mut CatTransaction);
+    fn clearMessage(message: *mut CatMessage) -> *mut ::std::os::raw::c_void;
     fn createCATStaticQueue(maxQueueSize: usize) -> *mut _CATStaticQueue;
     fn destroyCATStaticQueue(pQueue: *mut _CATStaticQueue);
     fn free(arg1: *mut ::std::os::raw::c_void);
@@ -19,21 +15,22 @@ extern "C" {
         pQueue: *mut _CATStaticQueue,
         index: usize,
     ) -> *mut ::std::os::raw::c_void;
-    fn gettimeofday(arg1: *mut timeval, arg2: *mut ::std::os::raw::c_void) -> i32;
-    fn initCatMessage(pMsg: *mut _CatMessage, msgType: u8, type_: *const u8, name: *const u8);
-    fn isCatTransaction(message: *mut _CatMessage) -> i32;
-    fn malloc(__size: usize) -> *mut ::std::os::raw::c_void;
+    fn initCatMessage(pMsg: *mut CatMessage, msgType: u8, type_: *const u8, name: *const u8);
+    fn isCatTransaction(message: *mut CatMessage) -> i32;
     fn pushBackCATStaticQueue(
         pQueue: *mut _CATStaticQueue,
         pData: *mut ::std::os::raw::c_void,
     ) -> i32;
 }
 
-enum Union1 {}
+#[derive(Copy)]
+pub enum Union1 {}
 
-enum _CatMessage {}
-
-enum __sFILEX {}
+impl Clone for Union1 {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 
 #[derive(Copy)]
 #[repr(C)]
@@ -48,64 +45,10 @@ impl Clone for __sbuf {
     }
 }
 
-#[derive(Copy)]
-#[repr(C)]
-pub struct __sFILE {
-    pub _p: *mut u8,
-    pub _r: i32,
-    pub _w: i32,
-    pub _flags: i16,
-    pub _file: i16,
-    pub _bf: __sbuf,
-    pub _lbfsize: i32,
-    pub _cookie: *mut ::std::os::raw::c_void,
-    pub _close: unsafe extern "C" fn(*mut ::std::os::raw::c_void) -> i32,
-    pub _read: unsafe extern "C" fn(*mut ::std::os::raw::c_void, *mut u8, i32) -> i32,
-    pub _seek: unsafe extern "C" fn(*mut ::std::os::raw::c_void, isize, i32) -> isize,
-    pub _write: unsafe extern "C" fn(*mut ::std::os::raw::c_void, *const u8, i32) -> i32,
-    pub _ub: __sbuf,
-    pub _extra: *mut __sFILEX,
-    pub _ur: i32,
-    pub _ubuf: [u8; 3],
-    pub _nbuf: [u8; 1],
-    pub _lb: __sbuf,
-    pub _blksize: i32,
-    pub _offset: isize,
-}
+unsafe extern "C" fn addDataPairNull(mut message: *mut CatTransaction, mut data: *const u8) {}
 
-impl Clone for __sFILE {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn __sputc(mut _c: i32, mut _p: *mut __sFILE) -> i32 {
-    if {
-        (*_p)._w = (*_p)._w - 1;
-        (*_p)._w
-    } >= 0i32
-        || (*_p)._w >= (*_p)._lbfsize && (_c as (u8) as (i32) != b'\n' as (i32))
-    {
-        ({
-            let _rhs = _c;
-            let _lhs = &mut *{
-                let _old = (*_p)._p;
-                (*_p)._p = (*_p)._p.offset(1isize);
-                _old
-            };
-            *_lhs = _rhs as (u8);
-            *_lhs
-        }) as (i32)
-    } else {
-        __swbuf(_c, _p)
-    }
-}
-
-unsafe extern "C" fn addDataPairNull(mut message: *mut _CatTransaction, mut data: *const u8) {}
-
-#[no_mangle]
-pub static mut g_cat_nullTrans: _CatTransaction = addDataPairNull as (_CatTransaction);
+// #[no_mangle]
+// pub static mut g_cat_nullTrans: CatTransaction = addDataPairNull as (CatTransaction);
 
 #[derive(Copy)]
 #[repr(C)]
@@ -125,7 +68,7 @@ impl Clone for _CATStaticQueue {
 
 #[derive(Copy)]
 #[repr(C)]
-pub struct _CatMessageInner {
+pub struct CatMessageInner {
     pub messageType: Union1,
     pub type_: *mut u8,
     pub name: *mut u8,
@@ -135,7 +78,7 @@ pub struct _CatMessageInner {
     pub isComplete: i32,
 }
 
-impl Clone for _CatMessageInner {
+impl Clone for CatMessageInner {
     fn clone(&self) -> Self {
         *self
     }
@@ -147,7 +90,7 @@ pub struct _CatTranscationInner {
     pub children: *mut _CATStaticQueue,
     pub durationStart: usize,
     pub durationUs: usize,
-    pub message: _CatMessageInner,
+    pub message: CatMessageInner,
 }
 
 impl Clone for _CatTranscationInner {
@@ -156,7 +99,7 @@ impl Clone for _CatTranscationInner {
     }
 }
 
-unsafe extern "C" fn deleteCatMessage(mut message: *mut _CatMessage) {
+unsafe extern "C" fn deleteCatMessage(mut message: *mut CatMessage) {
     let mut p: *mut ::std::os::raw::c_void;
     if isCatTransaction(message) != 0 {
         p = clearTransaction(message);
@@ -172,7 +115,7 @@ unsafe extern "C" fn getCATStaticQueueSize(mut pQueue: *mut _CATStaticQueue) -> 
 
 #[no_mangle]
 pub unsafe extern "C" fn clearTransaction(
-    mut message: *mut _CatMessage,
+    mut message: *mut CatMessage,
 ) -> *mut ::std::os::raw::c_void {
     let mut pInner: *mut _CatTranscationInner = (message as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
@@ -183,8 +126,8 @@ pub unsafe extern "C" fn clearTransaction(
         if !(i < getCATStaticQueueSize((*pInner).children)) {
             break;
         }
-        let mut pMessage: *mut _CatMessage =
-            getCATStaticQueueByIndex((*pInner).children, i) as (*mut _CatMessage);
+        let mut pMessage: *mut CatMessage =
+            getCATStaticQueueByIndex((*pInner).children, i) as (*mut CatMessage);
         deleteCatMessage(pMessage);
         i = i.wrapping_add(1usize);
     }
@@ -194,7 +137,7 @@ pub unsafe extern "C" fn clearTransaction(
 
 #[no_mangle]
 pub unsafe extern "C" fn getCatTransactionChildren(
-    mut pSrcTrans: *mut _CatTransaction,
+    mut pSrcTrans: *mut CatTransaction,
 ) -> *mut _CATStaticQueue {
     let mut pInner: *mut _CatTranscationInner = (pSrcTrans as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
@@ -239,50 +182,18 @@ impl Clone for _CatClientInnerConfig {
     }
 }
 
-#[derive(Copy)]
-#[repr(C)]
-pub struct timeval {
-    pub tv_sec: isize,
-    pub tv_usec: i32,
-}
-
-impl Clone for timeval {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
 unsafe extern "C" fn GetTime64() -> usize {
     let mut buf: usize;
-    let mut tv: timeval;
+    let mut tv: timeval = mem::uninitialized();
     gettimeofday(
         &mut tv as (*mut timeval),
         0i32 as (*mut ::std::os::raw::c_void),
     );
-    buf = (tv.tv_sec * 1000isize + (tv.tv_usec / 1000i32) as (isize)) as (usize);
+    buf = (tv.tv_sec * 1000 + (tv.tv_usec / 1000) as i64) as (usize);
     buf
 }
 
-#[derive(Copy)]
-#[repr(C)]
-pub struct _CatTransaction {
-    pub addData: unsafe extern "C" fn(*mut _CatTransaction, *const u8),
-    pub addKV: unsafe extern "C" fn(*mut _CatTransaction, *const u8, *const u8),
-    pub setStatus: unsafe extern "C" fn(*mut _CatTransaction, *const u8),
-    pub setTimestamp: unsafe extern "C" fn(*mut _CatTransaction, usize),
-    pub complete: unsafe extern "C" fn(*mut _CatTransaction),
-    pub addChild: unsafe extern "C" fn(*mut _CatTransaction, *mut _CatMessage),
-    pub setDurationInMillis: unsafe extern "C" fn(*mut _CatTransaction, usize),
-    pub setDurationStart: unsafe extern "C" fn(*mut _CatTransaction, usize),
-}
-
-impl Clone for _CatTransaction {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-unsafe extern "C" fn setTransactionComplete(mut message: *mut _CatTransaction) {
+unsafe extern "C" fn setTransactionComplete(mut message: *mut CatTransaction) {
     let mut pInner: *mut _CatTranscationInner = (message as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
         as (*mut _CatTranscationInner);
@@ -297,7 +208,7 @@ unsafe extern "C" fn setTransactionComplete(mut message: *mut _CatTransaction) {
     }
 }
 
-unsafe extern "C" fn addChild(mut message: *mut _CatTransaction, mut childMsg: *mut _CatMessage) {
+unsafe extern "C" fn addChild(mut message: *mut CatTransaction, mut childMsg: *mut CatMessage) {
     let mut pInner: *mut _CatTranscationInner = (message as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
         as (*mut _CatTranscationInner);
@@ -306,19 +217,12 @@ unsafe extern "C" fn addChild(mut message: *mut _CatTransaction, mut childMsg: *
         childMsg as (*mut ::std::os::raw::c_void),
     );
     if -1i32 == pushRst {
-        CLogLogWithLocation(
-            0x8u16,
-            (*b"Transaction Add Child Error\xEF\xBC\x81\0").as_ptr(),
-            file!().as_ptr(),
-            line!() as (i32),
-            (*b"addChild\0").as_ptr(),
-            getCATStaticQueueSize((*pInner).children),
-        );
+        error!("Transaction Add Child Error");
     }
 }
 
 unsafe extern "C" fn setCatTransactionDurationUs(
-    mut trans: *mut _CatTransaction,
+    mut trans: *mut CatTransaction,
     mut durationUs: usize,
 ) {
     let mut pInner: *mut _CatTranscationInner = (trans as (*mut u8))
@@ -327,11 +231,11 @@ unsafe extern "C" fn setCatTransactionDurationUs(
     (*pInner).durationUs = durationUs;
 }
 
-unsafe extern "C" fn setDurationInMillis(mut trans: *mut _CatTransaction, mut duration: usize) {
+unsafe extern "C" fn setDurationInMillis(mut trans: *mut CatTransaction, mut duration: usize) {
     setCatTransactionDurationUs(trans, duration.wrapping_mul(1000usize));
 }
 
-unsafe extern "C" fn setDurationStart(mut trans: *mut _CatTransaction, mut start: usize) {
+unsafe extern "C" fn setDurationStart(mut trans: *mut CatTransaction, mut start: usize) {
     let mut tInner: *mut _CatTranscationInner = (trans as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
         as (*mut _CatTranscationInner);
@@ -342,18 +246,18 @@ unsafe extern "C" fn setDurationStart(mut trans: *mut _CatTransaction, mut start
 pub unsafe extern "C" fn createCatTransaction(
     mut type_: *const u8,
     mut name: *const u8,
-) -> *mut _CatTransaction {
+) -> *mut CatTransaction {
     let mut pTransInner: *mut _CatTranscationInner = malloc(
-        ::std::mem::size_of::<_CatTransaction>()
+        ::std::mem::size_of::<CatTransaction>()
             .wrapping_add(::std::mem::size_of::<_CatTranscationInner>()),
     ) as (*mut _CatTranscationInner);
     if pTransInner == 0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatTranscationInner) {
-        0i32 as (*mut ::std::os::raw::c_void) as (*mut _CatTransaction)
+        0i32 as (*mut ::std::os::raw::c_void) as (*mut CatTransaction)
     } else {
-        let mut pTrans: *mut _CatTransaction = (pTransInner as (*mut u8))
+        let mut pTrans: *mut CatTransaction = (pTransInner as (*mut u8))
             .offset(::std::mem::size_of::<_CatTranscationInner>() as (isize))
-            as (*mut _CatTransaction);
-        initCatMessage(pTrans as (*mut _CatMessage), b'T', type_, name);
+            as (*mut CatTransaction);
+        initCatMessage(pTrans as (*mut CatMessage), b'T', type_, name);
         (*pTransInner).children = createCATStaticQueue(g_config.maxChildSize as (usize));
         (*pTransInner).durationStart = GetTime64().wrapping_mul(1000usize).wrapping_mul(1000usize);
         (*pTransInner).durationUs = 0usize;
@@ -367,7 +271,7 @@ pub unsafe extern "C" fn createCatTransaction(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn getCatTransactionDurationUs(mut trans: *mut _CatTransaction) -> usize {
+pub unsafe extern "C" fn getCatTransactionDurationUs(mut trans: *mut CatTransaction) -> usize {
     let mut pInner: *mut _CatTranscationInner = (trans as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
         as (*mut _CatTranscationInner);
@@ -386,12 +290,12 @@ pub unsafe extern "C" fn getCatTransactionDurationUs(mut trans: *mut _CatTransac
             && ((*pInner).children
                 != 0i32 as (*mut ::std::os::raw::c_void) as (*mut _CATStaticQueue))
         {
-            let mut lastChild: *mut _CatMessage =
+            let mut lastChild: *mut CatMessage =
                 getCATStaticQueueByIndex((*pInner).children, len.wrapping_sub(1usize))
-                    as (*mut _CatMessage);
-            let mut lastChildInner: *mut _CatMessageInner = (lastChild as (*mut u8))
-                .offset(-(::std::mem::size_of::<_CatMessageInner>() as (isize)))
-                as (*mut _CatMessageInner);
+                    as (*mut CatMessage);
+            let mut lastChildInner: *mut CatMessageInner = (lastChild as (*mut u8))
+                .offset(-(::std::mem::size_of::<CatMessageInner>() as (isize)))
+                as (*mut CatMessageInner);
             if isCatTransaction(lastChild) != 0 {
                 let mut pInner: *mut _CatTranscationInner = (lastChild as (*mut u8))
                     .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
@@ -414,12 +318,12 @@ pub unsafe extern "C" fn getCatTransactionDurationUs(mut trans: *mut _CatTransac
 
 #[no_mangle]
 pub unsafe extern "C" fn copyCatTransaction(
-    mut pSrcTrans: *mut _CatTransaction,
-) -> *mut _CatTransaction {
+    mut pSrcTrans: *mut CatTransaction,
+) -> *mut CatTransaction {
     let mut pSrcTransInner: *mut _CatTranscationInner = (pSrcTrans as (*mut u8))
         .offset(-(::std::mem::size_of::<_CatTranscationInner>() as (isize)))
         as (*mut _CatTranscationInner);
-    let mut clonedTrans: *mut _CatTransaction = createCatTransaction(
+    let mut clonedTrans: *mut CatTransaction = createCatTransaction(
         (*pSrcTransInner).message.type_ as (*const u8),
         (*pSrcTransInner).message.name as (*const u8),
     );

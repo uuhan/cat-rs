@@ -20,6 +20,7 @@ mod client_config;
 pub mod config;
 pub(crate) mod raw;
 mod sds;
+pub(crate) mod transaction;
 
 use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;

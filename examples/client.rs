@@ -1,3 +1,4 @@
+#![allow(unused)]
 extern crate cat_rs as cat;
 
 use cat::logEvent;

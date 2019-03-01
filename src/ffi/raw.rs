@@ -101,7 +101,6 @@ impl Default for CatMessage {
     }
 }
 
-/// TODO: CatMessage
 impl CatMessage {
     pub fn add_data(&mut self, data: String) -> &Self {
         unsafe { (self.addData)(self, c!(data)) };

@@ -2,6 +2,21 @@ language: rust
 rust: nightly
 sudo: false
 
+matrix:
+  include:
+    - env: FEATURES=""
+      rust: stable
+      os: linux
+    - env: FEATURES=""
+      rust: nightly
+      os: linux
+  allow_failures:
+    - rust: nightly
+
 script:
   - cargo build
   - cargo test
+
+after_success:
+  - |
+    echo "SUCCESS"

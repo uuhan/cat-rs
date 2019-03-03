@@ -15,6 +15,7 @@ extern "C" {
     fn copyCatMessageTree(pMsgTree: *mut CatMessageTree) -> *mut CatMessageTree;
     fn deleteCatMessageTree(pMsgTree: *mut CatMessageTree);
     static mut g_config: CatClientInnerConfig;
+    static mut g_cat_messageManager: CatMessageManager;
     fn getCatContext() -> *mut CatContext;
     fn getLocalHostIp(ipBuf: *mut u8) -> i32;
     fn getLocalHostIpHex(ipHexBuf: *mut u8) -> i32;
@@ -22,15 +23,6 @@ extern "C" {
     fn isCatSenderEnable() -> i32;
     fn sendRootMessage(tree: *mut CatMessageTree) -> i32;
 }
-
-#[no_mangle]
-pub static mut g_cat_messageManager: CatMessageManager = CatMessageManager {
-    domain: 0i32 as (*mut u8),
-    hostname: 0 as (*mut u8),
-    ip: 0 as (*mut u8),
-    ipHex: 0 as (*mut u8),
-    throttleTimes: 0isize,
-};
 
 pub unsafe extern "C" fn catMessageManagerAdd(mut message: *mut CatMessage) {
     let mut ctx: *mut CatContext = getCatContext();

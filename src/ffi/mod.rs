@@ -20,6 +20,7 @@ mod client_config;
 pub mod config;
 pub(crate) mod context;
 pub(crate) mod helper;
+pub(crate) mod message;
 pub(crate) mod message_manager;
 pub(crate) mod message_sender;
 pub(crate) mod monitor;
@@ -31,6 +32,9 @@ use client_config::initCatClientConfig;
 use config::ClientConfig;
 use context::getContextMessageTree;
 use helper::GetTime64;
+use message::createCatEvent;
+use message::createCatHeartBeat;
+use message::createCatMetric;
 use message_manager::catMessageManagerDestroy;
 use message_manager::catMessageManagerStartTrans;
 use message_manager::initMessageManager;
@@ -60,9 +64,6 @@ extern "C" {
     fn clearCatAggregatorThread();
     fn clearCatServerConnManager();
 
-    fn createCatEvent(type_: *const u8, name: *const u8) -> *mut CatMessage;
-    fn createCatHeartBeat(type_: *const u8, name: *const u8) -> *mut CatMessage;
-    fn createCatMetric(type_: *const u8, name: *const u8) -> *mut CatMessage;
     fn createCatTransaction(type_: *const u8, name: *const u8) -> *mut CatTransaction;
     fn destroyMessageIdHelper();
     static mut g_cat_enabledFlag: i32;

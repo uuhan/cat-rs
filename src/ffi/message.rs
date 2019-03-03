@@ -136,11 +136,7 @@ unsafe extern "C" fn setEventComplete(mut message: *mut CatMessage) {
     catMessageManagerAdd(message);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn createCatEvent(
-    mut type_: *const u8,
-    mut name: *const u8,
-) -> *mut CatMessage {
+pub unsafe fn createCatEvent(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     let mut pEventInner: *mut CatMessageInner = malloc(
         ::std::mem::size_of::<CatMessage>().wrapping_add(::std::mem::size_of::<CatMessageInner>()),
     ) as (*mut CatMessageInner);
@@ -164,11 +160,7 @@ unsafe extern "C" fn setMetricComplete(mut message: *mut CatMessage) {
     catMessageManagerAdd(message);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn createCatMetric(
-    mut type_: *const u8,
-    mut name: *const u8,
-) -> *mut CatMessage {
+pub unsafe fn createCatMetric(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     let mut pMetricInner: *mut CatMessageInner = malloc(
         ::std::mem::size_of::<CatMessage>().wrapping_add(::std::mem::size_of::<CatMessageInner>()),
     ) as (*mut CatMessageInner);
@@ -193,10 +185,7 @@ unsafe extern "C" fn setHeartBeatComplete(mut message: *mut CatMessage) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn createCatHeartBeat(
-    mut type_: *const u8,
-    mut name: *const u8,
-) -> *mut CatMessage {
+pub unsafe fn createCatHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     let mut pHeartBeatInner: *mut CatMessageInner = malloc(
         ::std::mem::size_of::<CatMessage>().wrapping_add(::std::mem::size_of::<CatMessageInner>()),
     ) as (*mut CatMessageInner);

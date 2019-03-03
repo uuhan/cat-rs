@@ -1,24 +1,23 @@
 use super::helper::GetTime64;
+use super::message::clearMessage;
+use super::message::initCatMessage;
 use super::raw::{
     CATStaticQueue, CatClientInnerConfig, CatMessage, CatMessageInner, CatTransaction,
     CatTransactionInner,
 };
 use super::sds::catsdsdup;
-use libc::{gettimeofday, malloc, timeval};
+use libc::{free, gettimeofday, malloc, timeval};
 use std::mem;
 
 extern "C" {
     fn catMessageManagerEndTrans(trans: *mut CatTransaction);
-    fn clearMessage(message: *mut CatMessage) -> *mut ::std::os::raw::c_void;
     fn createCATStaticQueue(maxQueueSize: usize) -> *mut CATStaticQueue;
     fn destroyCATStaticQueue(pQueue: *mut CATStaticQueue);
-    fn free(arg1: *mut ::std::os::raw::c_void);
     static mut g_config: CatClientInnerConfig;
     fn getCATStaticQueueByIndex(
         pQueue: *mut CATStaticQueue,
         index: usize,
     ) -> *mut ::std::os::raw::c_void;
-    fn initCatMessage(pMsg: *mut CatMessage, msgType: u8, type_: *const u8, name: *const u8);
     fn isCatTransaction(message: *mut CatMessage) -> i32;
     fn pushBackCATStaticQueue(
         pQueue: *mut CATStaticQueue,

@@ -100,8 +100,7 @@ unsafe extern "C" fn setStatus(mut message: *mut CatMessage, mut status: *const 
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn initCatMessage(
+pub unsafe fn initCatMessage(
     mut pMsg: *mut CatMessage,
     mut msgType: u8,
     mut type_: *const u8,
@@ -115,7 +114,9 @@ pub unsafe extern "C" fn initCatMessage(
         0i32,
         ::std::mem::size_of::<CatMessage>().wrapping_add(::std::mem::size_of::<CatMessageInner>()),
     );
-    (*pInner).messageType = MessageType::type_(msgType as i8);
+    (*pInner).messageType = MessageType {
+        type_: msgType as i8,
+    };
     (*pInner).timestampMs = GetTime64();
     (*pInner).type_ = catsdsnew(type_);
     (*pInner).name = catsdsnew(name);

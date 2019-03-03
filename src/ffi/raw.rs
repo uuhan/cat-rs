@@ -239,9 +239,10 @@ impl Clone for CATStaticQueue {
 }
 
 #[derive(Copy)]
-pub enum MessageType {
-    type_(c_char),
-    flag_(c_int),
+#[repr(C)]
+pub union MessageType {
+    pub type_: c_char,
+    pub flag_: c_int,
 }
 
 impl Clone for MessageType {

@@ -18,6 +18,12 @@ fn main() {
         .file("ccat/lib/cat_stack.c")
         .file("ccat/lib/cat_static_queue.c")
         .file("ccat/lib/cat_time_util.c")
+        .compile("catlib");
+
+    cc::Build::new()
+        .flag("-std=gnu99")
+        .flag("-w")
+        .include("ccat")
         .file("ccat/ccat/client.c")
         .file("ccat/ccat/client_config.c")
         .file("ccat/ccat/context.c")

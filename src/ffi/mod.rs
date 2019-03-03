@@ -29,6 +29,8 @@ use client_config::initCatClientConfig;
 use config::ClientConfig;
 use helper::GetTime64;
 use message_sender::clearCatSenderThread;
+use monitor::clearCatMonitor;
+use monitor::initCatMonitorThread;
 pub use raw::CatClientConfig;
 pub use raw::CatClientInnerConfig;
 pub use raw::CatMessage;
@@ -52,7 +54,6 @@ extern "C" {
 
     /// __sync_add_and_fetch {0}
     fn clearCatAggregatorThread();
-    fn clearCatMonitor();
     fn clearCatServerConnManager();
 
     fn createCatEvent(type_: *const u8, name: *const u8) -> *mut CatMessage;
@@ -66,7 +67,6 @@ extern "C" {
     fn getNextMessageId() -> *mut u8;
     fn getNextMessageIdByAppkey(domain: *const u8) -> *mut u8;
     fn initCatAggregatorThread();
-    fn initCatMonitorThread();
     fn initCatSenderThread();
     fn initCatServerConnManager() -> i32;
     fn initMessageIdHelper();

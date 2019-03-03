@@ -28,51 +28,6 @@ extern "C" {
     fn usleep(arg1: u32) -> i32;
 }
 
-pub unsafe extern "C" fn isascii(mut _c: i32) -> i32 {
-    (_c & !0x7fi32 == 0i32) as (i32)
-}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct Struct3 {
-    pub __min: i32,
-    pub __max: i32,
-    pub __map: i32,
-    pub __types: *mut u32,
-}
-
-impl Clone for Struct3 {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct Struct2 {
-    pub __nranges: i32,
-    pub __ranges: *mut Struct3,
-}
-
-impl Clone for Struct2 {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-#[derive(Copy)]
-#[repr(C)]
-pub struct Struct4 {
-    pub __name: [u8; 14],
-    pub __mask: u32,
-}
-
-impl Clone for Struct4 {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
 static mut G_CAT_MONITOR_STOP: i32 = 0i32;
 
 #[derive(Copy)]

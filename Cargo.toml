@@ -9,7 +9,6 @@ links = "cat"
 
 [build-dependencies]
 cc = "1.0.29"
-bindgen = "0.47.3"
 
 [dependencies]
 libc = "0.2.48"

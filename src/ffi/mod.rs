@@ -19,7 +19,6 @@ mod mac;
 mod client_config;
 pub mod config;
 pub(crate) mod helper;
-pub(crate) mod lib;
 pub(crate) mod raw;
 mod sds;
 

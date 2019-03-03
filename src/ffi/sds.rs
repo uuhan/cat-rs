@@ -17,13 +17,13 @@ pub struct sdshdr {
 }
 
 #[inline]
-unsafe fn catsdsavail(s: *mut u8) -> usize {
+pub unsafe fn catsdsavail(s: *mut u8) -> usize {
     let sh: *const sdshdr = s.offset(-(mem::size_of::<sdshdr>() as isize)) as *const sdshdr;
     return (*sh).free as usize;
 }
 
 #[inline]
-unsafe fn catsdslen(s: *mut u8) -> usize {
+pub unsafe fn catsdslen(s: *mut u8) -> usize {
     let sh: *const sdshdr = s.offset(-(mem::size_of::<sdshdr>() as isize)) as *const sdshdr;
     return (*sh).len as usize;
 }

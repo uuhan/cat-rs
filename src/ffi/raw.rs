@@ -278,3 +278,45 @@ impl Clone for CatTransactionInner {
         *self
     }
 }
+
+#[derive(Copy)]
+#[repr(C)]
+pub struct CatEncoder {
+    pub setAppkey: unsafe extern "C" fn(*mut CatEncoder, *const u8),
+    pub setHostname: unsafe extern "C" fn(*mut CatEncoder, *const u8),
+    pub setIp: unsafe extern "C" fn(*mut CatEncoder, *const u8),
+    pub header: unsafe extern "C" fn(*mut CatEncoder, *mut CatMessageTree),
+    pub message: unsafe extern "C" fn(*mut CatEncoder, *mut CatMessage),
+    pub transactionStart: unsafe extern "C" fn(*mut CatEncoder, *mut CatTransaction),
+    pub transactionEnd: unsafe extern "C" fn(*mut CatEncoder, *mut CatTransaction),
+    pub transaction: unsafe extern "C" fn(*mut CatEncoder, *mut CatTransaction),
+    pub event: unsafe extern "C" fn(*mut CatEncoder, *mut CatMessage),
+    pub metric: unsafe extern "C" fn(*mut CatEncoder, *mut CatMessage),
+    pub heartbeat: unsafe extern "C" fn(*mut CatEncoder, *mut CatMessage),
+    pub ip: *const u8,
+    pub hostname: *const u8,
+    pub appkey: *const u8,
+    pub buf: *mut *mut u8,
+}
+
+impl Clone for CatEncoder {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+#[derive(Copy)]
+#[repr(C)]
+pub struct CatMessageManager {
+    pub domain: *mut u8,
+    pub hostname: *mut u8,
+    pub ip: *mut u8,
+    pub ipHex: *mut u8,
+    pub throttleTimes: isize,
+}
+
+impl Clone for CatMessageManager {
+    fn clone(&self) -> Self {
+        *self
+    }
+}

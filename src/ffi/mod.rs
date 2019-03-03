@@ -19,6 +19,8 @@ mod mac;
 mod client_config;
 pub mod config;
 pub(crate) mod helper;
+pub(crate) mod message_sender;
+pub(crate) mod monitor;
 pub(crate) mod raw;
 mod sds;
 
@@ -26,6 +28,7 @@ use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;
 use config::ClientConfig;
 use helper::GetTime64;
+use message_sender::clearCatSenderThread;
 pub use raw::CatClientConfig;
 pub use raw::CatClientInnerConfig;
 pub use raw::CatMessage;
@@ -50,7 +53,6 @@ extern "C" {
     /// __sync_add_and_fetch {0}
     fn clearCatAggregatorThread();
     fn clearCatMonitor();
-    fn clearCatSenderThread();
     fn clearCatServerConnManager();
 
     fn createCatEvent(type_: *const u8, name: *const u8) -> *mut CatMessage;

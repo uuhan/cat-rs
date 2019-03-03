@@ -1,4 +1,5 @@
 use super::newTransaction;
+use libc::{c_char, c_int};
 use std::default::Default;
 use std::ffi::CString;
 use std::fmt::{self, Display};
@@ -238,9 +239,12 @@ impl Clone for CATStaticQueue {
 }
 
 #[derive(Copy)]
-pub enum Union1 {}
+pub enum MessageType {
+    type_(c_char),
+    flag_(c_int),
+}
 
-impl Clone for Union1 {
+impl Clone for MessageType {
     fn clone(&self) -> Self {
         *self
     }
@@ -249,7 +253,7 @@ impl Clone for Union1 {
 #[derive(Copy)]
 #[repr(C)]
 pub struct CatMessageInner {
-    pub messageType: Union1,
+    pub messageType: MessageType,
     pub type_: *mut u8,
     pub name: *mut u8,
     pub status: *mut u8,

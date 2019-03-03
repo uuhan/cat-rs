@@ -1,6 +1,15 @@
+use bindgen;
 use cc;
+use std::env;
+use std::path::PathBuf;
 
 fn main() {
+    let bindings = bindgen::Builder::default()
+        .clang_arg("-Iccat")
+        .unstable_rust(false)
+        .header("wrapper.h")
+        .generate()
+        .expect("Unable to generate bindings");
     cc::Build::new()
         .flag("-std=gnu99")
         .flag("-w")
@@ -47,4 +56,8 @@ fn main() {
         .file("ccat/ccat/server_connection_manager.c")
         .file("ccat/ccat/transaction.c")
         .compile("ccat");
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Could't write bindings");
 }

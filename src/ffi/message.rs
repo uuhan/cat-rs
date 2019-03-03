@@ -20,8 +20,7 @@ unsafe extern "C" fn addDataNull(mut message: *mut CatMessage, mut data: *const 
 // #[no_mangle]
 // pub static mut g_cat_nullMsg: CatMessage = addDataNull as (CatMessage);
 
-#[no_mangle]
-pub unsafe extern "C" fn clearMessage(mut message: *mut CatMessage) -> *mut ::std::os::raw::c_void {
+pub unsafe fn clearMessage(mut message: *mut CatMessage) -> *mut ::std::os::raw::c_void {
     let mut pInner: *mut CatMessageInner = (message as (*mut u8))
         .offset(-(::std::mem::size_of::<CatMessageInner>() as (isize)))
         as (*mut CatMessageInner);
@@ -183,7 +182,6 @@ unsafe extern "C" fn setHeartBeatComplete(mut message: *mut CatMessage) {
     catMessageManagerAdd(message);
 }
 
-#[no_mangle]
 pub unsafe fn createCatHeartBeat(mut type_: *const u8, mut name: *const u8) -> *mut CatMessage {
     let mut pHeartBeatInner: *mut CatMessageInner = malloc(
         ::std::mem::size_of::<CatMessage>().wrapping_add(::std::mem::size_of::<CatMessageInner>()),

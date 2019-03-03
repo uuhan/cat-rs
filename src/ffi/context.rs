@@ -8,7 +8,7 @@ use super::raw::CatTransaction;
 use super::sds::catsdsfree;
 use super::sds::catsdsfromlonglong;
 use super::sds::catsdsnew;
-
+use libc::malloc;
 use std::mem;
 
 extern "C" {
@@ -26,7 +26,6 @@ extern "C" {
         index: usize,
     ) -> *mut ::std::os::raw::c_void;
     fn getCatTransactionDurationUs(trans: *mut CatTransaction) -> usize;
-    fn malloc(__size: usize) -> *mut ::std::os::raw::c_void;
     fn popFrontCATStaticQueue(pQueue: *mut CATStaticQueue) -> *mut ::std::os::raw::c_void;
     fn pryFrontCATStaticQueue(pQueue: *mut CATStaticQueue) -> *mut ::std::os::raw::c_void;
     fn pthread_threadid_np(arg1: *mut _opaque_pthread_t, arg2: *mut usize) -> i32;

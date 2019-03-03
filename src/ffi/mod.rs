@@ -23,6 +23,7 @@ pub(crate) mod helper;
 pub(crate) mod message;
 pub(crate) mod message_manager;
 pub(crate) mod message_sender;
+pub(crate) mod message_tree;
 pub(crate) mod monitor;
 pub(crate) mod raw;
 mod sds;

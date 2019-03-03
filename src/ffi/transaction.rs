@@ -37,7 +37,7 @@ fn setDurationStartNull(mut trans: *mut CatTransaction, mut durationStart: u64) 
 
 // pub static mut g_cat_nullTrans: CatTransaction = addDataPairNull as (CatTransaction);
 
-unsafe extern "C" fn deleteCatMessage(mut message: *mut CatMessage) {
+unsafe fn deleteCatMessage(mut message: *mut CatMessage) {
     let mut p: *mut ::std::os::raw::c_void;
     if isCatTransaction(message) != 0 {
         p = clearTransaction(message);
@@ -47,13 +47,11 @@ unsafe extern "C" fn deleteCatMessage(mut message: *mut CatMessage) {
     free(p);
 }
 
-unsafe extern "C" fn getCATStaticQueueSize(mut pQueue: *mut CATStaticQueue) -> usize {
+unsafe fn getCATStaticQueueSize(mut pQueue: *mut CATStaticQueue) -> usize {
     (*pQueue).size
 }
 
-pub unsafe extern "C" fn clearTransaction(
-    mut message: *mut CatMessage,
-) -> *mut ::std::os::raw::c_void {
+pub unsafe fn clearTransaction(mut message: *mut CatMessage) -> *mut ::std::os::raw::c_void {
     let mut pInner: *mut CatTransactionInner = (message as (*mut u8))
         .offset(-(::std::mem::size_of::<CatTransactionInner>() as (isize)))
         as (*mut CatTransactionInner);
@@ -72,9 +70,7 @@ pub unsafe extern "C" fn clearTransaction(
     pInner as (*mut ::std::os::raw::c_void)
 }
 
-pub unsafe extern "C" fn getCatTransactionChildren(
-    mut pSrcTrans: *mut CatTransaction,
-) -> *mut CATStaticQueue {
+pub unsafe fn getCatTransactionChildren(mut pSrcTrans: *mut CatTransaction) -> *mut CATStaticQueue {
     let mut pInner: *mut CatTransactionInner = (pSrcTrans as (*mut u8))
         .offset(-(::std::mem::size_of::<CatTransactionInner>() as (isize)))
         as (*mut CatTransactionInner);
@@ -109,10 +105,7 @@ unsafe extern "C" fn addChild(mut message: *mut CatTransaction, mut childMsg: *m
     }
 }
 
-unsafe extern "C" fn setCatTransactionDurationUs(
-    mut trans: *mut CatTransaction,
-    mut durationUs: usize,
-) {
+unsafe fn setCatTransactionDurationUs(mut trans: *mut CatTransaction, mut durationUs: usize) {
     let mut pInner: *mut CatTransactionInner = (trans as (*mut u8))
         .offset(-(::std::mem::size_of::<CatTransactionInner>() as (isize)))
         as (*mut CatTransactionInner);
@@ -130,7 +123,7 @@ unsafe extern "C" fn setDurationStart(mut trans: *mut CatTransaction, mut start:
     (*tInner).durationStart = start.wrapping_mul(1000usize).wrapping_mul(1000usize);
 }
 
-pub unsafe extern "C" fn createCatTransaction(
+pub unsafe fn createCatTransaction(
     mut type_: *const u8,
     mut name: *const u8,
 ) -> *mut CatTransaction {
@@ -157,7 +150,7 @@ pub unsafe extern "C" fn createCatTransaction(
     }
 }
 
-pub unsafe extern "C" fn getCatTransactionDurationUs(mut trans: *mut CatTransaction) -> usize {
+pub unsafe fn getCatTransactionDurationUs(mut trans: *mut CatTransaction) -> usize {
     let mut pInner: *mut CatTransactionInner = (trans as (*mut u8))
         .offset(-(::std::mem::size_of::<CatTransactionInner>() as (isize)))
         as (*mut CatTransactionInner);
@@ -202,9 +195,7 @@ pub unsafe extern "C" fn getCatTransactionDurationUs(mut trans: *mut CatTransact
     }
 }
 
-pub unsafe extern "C" fn copyCatTransaction(
-    mut pSrcTrans: *mut CatTransaction,
-) -> *mut CatTransaction {
+pub unsafe fn copyCatTransaction(mut pSrcTrans: *mut CatTransaction) -> *mut CatTransaction {
     let mut pSrcTransInner: *mut CatTransactionInner = (pSrcTrans as (*mut u8))
         .offset(-(::std::mem::size_of::<CatTransactionInner>() as (isize)))
         as (*mut CatTransactionInner);

@@ -26,6 +26,7 @@ pub(crate) mod message_sender;
 pub(crate) mod monitor;
 pub(crate) mod raw;
 mod sds;
+pub(crate) mod transaction;
 
 use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;
@@ -50,6 +51,7 @@ pub use raw::CatTransaction;
 use sds::catsdsfree;
 use sds::catsdsfromlonglong;
 use sds::catsdsnew;
+use transaction::createCatTransaction;
 
 /// cat static
 static mut G_CAT_INIT: i32 = 0i32;
@@ -64,7 +66,6 @@ extern "C" {
     fn clearCatAggregatorThread();
     fn clearCatServerConnManager();
 
-    fn createCatTransaction(type_: *const u8, name: *const u8) -> *mut CatTransaction;
     fn destroyMessageIdHelper();
     static mut g_cat_enabledFlag: i32;
     static mut g_config: CatClientInnerConfig;

@@ -22,7 +22,6 @@ pub(crate) mod context;
 pub(crate) mod helper;
 pub(crate) mod message;
 pub(crate) mod message_manager;
-pub(crate) mod message_sender;
 pub(crate) mod message_tree;
 pub(crate) mod monitor;
 pub(crate) mod raw;
@@ -40,8 +39,6 @@ use message::createCatMetric;
 use message_manager::catMessageManagerDestroy;
 use message_manager::catMessageManagerStartTrans;
 use message_manager::initMessageManager;
-use message_sender::clearCatSenderThread;
-use message_sender::initCatSenderThread;
 use monitor::clearCatMonitor;
 use monitor::initCatMonitorThread;
 pub use raw::CatClientConfig;
@@ -59,13 +56,17 @@ static mut G_CAT_INIT: i32 = 0i32;
 
 #[allow(dead_code)]
 extern "C" {
-    /// __sync_add_and_fetch
+    // __sync_add_and_fetch
     fn addCountMetricToAggregator(name: *const u8, count: i32);
     fn addDurationMetricToAggregator(name: *const u8, timeMs: i32);
 
-    /// __sync_add_and_fetch {0}
+    // __sync_add_and_fetch {0}
     fn clearCatAggregatorThread();
     fn clearCatServerConnManager();
+
+    // message_sender.rs
+    fn initCatSenderThread();
+    fn clearCatSenderThread();
 
     fn destroyMessageIdHelper();
     static mut g_cat_enabledFlag: i32;

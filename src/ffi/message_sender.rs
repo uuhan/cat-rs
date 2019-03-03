@@ -25,6 +25,12 @@ extern "C" {
     static mut g_cat_encoder: *mut CatEncoder;
     static mut g_cat_messageManager: CatMessageManager;
     static mut g_config: CatClientInnerConfig;
+    static mut g_cat_send_fd: i32;
+    static mut g_cat_send_ip: [u8; 64];
+    static mut g_cat_send_port: u16;
+    static mut g_cat_send_blockTimes: usize;
+    static mut g_cat_send_failedFlag: i32;
+
     fn hitSample() -> i32;
     fn newCatBinaryEncoder() -> *mut CatEncoder;
     fn newCatMPSCQueue(name: *const u8, capacity: i32) -> *mut _queue;
@@ -86,21 +92,6 @@ static mut G_CAT_MQ: Struct1 = Struct1 {
 };
 
 static mut G_CAT_SEND_STOP: i32 = 0i32;
-
-#[no_mangle]
-pub static mut g_cat_send_fd: i32 = -1i32;
-
-#[no_mangle]
-pub static mut g_cat_send_ip: [u8; 64] = [0u8; 64];
-
-#[no_mangle]
-pub static mut g_cat_send_port: u16 = 0u16;
-
-#[no_mangle]
-pub static mut g_cat_send_blockTimes: usize = 0usize;
-
-#[no_mangle]
-pub static mut g_cat_send_failedFlag: i32 = 0i32;
 
 #[derive(Copy)]
 #[repr(C)]

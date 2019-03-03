@@ -9,7 +9,7 @@ use super::sds::catsdsfree;
 use super::sds::catsdslen;
 use super::sds::catsdsnewEmpty;
 use super::sds::sdshdr;
-use libc::__error;
+use libc::c_int;
 use libc::usleep;
 use libc::write;
 use std::mem;
@@ -38,6 +38,19 @@ extern "C" {
     fn pthread_join(arg1: *mut _opaque_pthread_t, arg2: *mut *mut ::std::os::raw::c_void) -> i32;
     fn recoverCatServerConn() -> i32;
     fn sendToAggregator(pMsgTree: *mut CatMessageTree);
+
+    #[cfg(not(target_os = "dragonfly"))]
+    #[cfg_attr(
+        any(target_os = "macos", target_os = "ios", target_os = "freebsd"),
+        link_name = "__error"
+    )]
+    #[cfg_attr(
+        any(target_os = "openbsd", target_os = "bitrig", target_os = "android"),
+        link_name = "__errno"
+    )]
+    #[cfg_attr(target_os = "solaris", link_name = "___errno")]
+    #[cfg_attr(target_os = "linux", link_name = "__errno_location")]
+    fn errno_location() -> *mut c_int;
 }
 
 #[derive(Copy)]
@@ -252,7 +265,7 @@ unsafe extern "C" fn sendCatMessageBufferDirectly(
                 sendTotalLen.wrapping_sub(nowSendLen as (usize)),
             );
             if sendLen == -1isize {
-                if !(*__error() == 35i32) {
+                if !(*errno_location() == 35) {
                     _currentBlock = 8;
                     break;
                 }

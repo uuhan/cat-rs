@@ -18,6 +18,7 @@ mod mac;
 
 mod client_config;
 pub mod config;
+pub(crate) mod context;
 pub(crate) mod helper;
 pub(crate) mod message_sender;
 pub(crate) mod monitor;
@@ -27,6 +28,7 @@ mod sds;
 use client_config::clearCatClientConfig;
 use client_config::initCatClientConfig;
 use config::ClientConfig;
+use context::getContextMessageTree;
 use helper::GetTime64;
 use message_sender::clearCatSenderThread;
 use message_sender::initCatSenderThread;
@@ -64,7 +66,6 @@ extern "C" {
     fn destroyMessageIdHelper();
     static mut g_cat_enabledFlag: i32;
     static mut g_config: CatClientInnerConfig;
-    fn getContextMessageTree() -> *mut CatMessageTree;
     fn getNextMessageId() -> *mut u8;
     fn getNextMessageIdByAppkey(domain: *const u8) -> *mut u8;
     fn initCatAggregatorThread();

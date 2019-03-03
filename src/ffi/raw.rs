@@ -320,3 +320,24 @@ impl Clone for CatMessageManager {
         *self
     }
 }
+
+#[derive(Copy)]
+#[repr(C)]
+pub struct CatContext {
+    pub tree: *mut CatMessageTree,
+    pub transactionStack: *mut CATStaticQueue,
+    pub elementSize: i32,
+    pub lastTruncateTransDurationUs: usize,
+    pub addMessage: unsafe extern "C" fn(*mut CatContext, *mut CatMessage),
+    pub addTransChild: unsafe extern "C" fn(*mut CatContext, *mut CatMessage, *mut CatTransaction),
+    pub adjustForTruncatedTrans: unsafe extern "C" fn(*mut CatContext, *mut CatTransaction),
+    pub startTrans: unsafe extern "C" fn(*mut CatContext, *mut CatTransaction),
+    pub endTrans: unsafe extern "C" fn(*mut CatContext, *mut CatTransaction),
+    pub reset: unsafe extern "C" fn(*mut CatContext),
+}
+
+impl Clone for CatContext {
+    fn clone(&self) -> Self {
+        *self
+    }
+}

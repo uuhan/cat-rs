@@ -2,6 +2,8 @@
 extern crate cat_rs as cat;
 
 use std::alloc::System;
+use std::error::Error;
+use std::result::Result;
 
 #[global_allocator]
 static GLOBAL: System = System;
@@ -10,9 +12,9 @@ use cat::logEvent;
 use cat::CatClient;
 use cat::CatTransaction;
 
-pub fn main() {
+pub fn main() -> Result<(), Box<Error>> {
     let mut cat = CatClient::new("test");
-    cat.init();
+    cat.init()?;
     let tr = CatTransaction::new("foo", "bar");
     assert!(!tr.is_null());
 
@@ -21,4 +23,6 @@ pub fn main() {
         logEvent("foo", "bar", "1", "");
         (*tr).complete();
     }
+
+    Ok(())
 }

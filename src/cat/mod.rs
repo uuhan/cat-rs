@@ -1,8 +1,33 @@
 #![allow(non_snake_case)]
+use std::error;
+use std::ffi::CString;
+use std::fmt;
+use std::result;
+
 use crate::cat_version;
 use crate::ffi::raw::*;
 use crate::ffi::*;
-use std::ffi::CString;
+
+#[derive(Debug, Clone)]
+pub enum CatError {
+    CatClientInitError,
+}
+
+impl error::Error for CatError {
+    fn description(&self) -> &str {
+        "cat client init failed!"
+    }
+}
+
+impl fmt::Display for CatError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            CatError::CatClientInitError => write!(f, "CatClientInitError"),
+        }
+    }
+}
+
+type Result<T> = result::Result<T, CatError>;
 
 /// cat client
 pub struct CatClient {
@@ -33,13 +58,17 @@ impl CatClient {
     }
 
     /// initialize cat client
-    pub fn init(&mut self) -> &Self {
+    pub fn init(&mut self) -> Result<&Self> {
         unsafe {
-            catClientInitWithConfig(
+            let rc = catClientInitWithConfig(
                 CString::new(self.appkey.clone()).unwrap().as_ptr() as *const u8,
                 self.config,
             );
-            self
+            if rc == 0 {
+                Err(CatError::CatClientInitError)
+            } else {
+                Ok(self)
+            }
         }
     }
 

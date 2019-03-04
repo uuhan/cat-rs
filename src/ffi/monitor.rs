@@ -7,6 +7,8 @@ use super::sds::catsdsfree;
 use super::sds::catsdsnew;
 use libc::free;
 
+use std::sync::atomic::AtomicIsize;
+
 extern "C" {
     fn catsdscatfmt(s: *mut u8, fmt: *const u8, ...) -> *mut u8;
     fn checkCatActiveConn() -> i32;
@@ -25,10 +27,9 @@ extern "C" {
     fn saveMark();
     fn strcmp(__s1: *const u8, __s2: *const u8) -> i32;
     fn updateCatServerConn() -> i32;
-    fn usleep(arg1: u32) -> i32;
 }
 
-static mut G_CAT_MONITOR_STOP: i32 = 0i32;
+static mut G_CAT_MONITOR_STOP: AtomicIsize = AtomicIsize::new(0);
 
 #[derive(Copy)]
 #[repr(C)]
@@ -94,7 +95,6 @@ impl Clone for _opaque_pthread_attr_t {
 unsafe extern "C" fn catMonitorFun(
     mut para: *mut ::std::os::raw::c_void,
 ) -> *mut ::std::os::raw::c_void {
-    usleep((1000i32 * 1000i32) as (u32));
     let mut reboot: *mut CatTransaction =
         newTransaction((*b"System\0").as_ptr(), (*b"Reboot\0").as_ptr());
     logEvent(
@@ -107,7 +107,7 @@ unsafe extern "C" fn catMonitorFun(
     ((*reboot).complete)(reboot);
     let mut runCount: usize = 1usize;
     'loop1: loop {
-        if !(G_CAT_MONITOR_STOP == 0) {
+        if !(*G_CAT_MONITOR_STOP.get_mut() == 0) {
             break;
         }
         checkCatActiveConn();
@@ -153,13 +153,12 @@ unsafe extern "C" fn catMonitorFun(
             ((*t).complete)(t);
         }
         runCount = runCount.wrapping_add(1usize);
-        usleep((1000i32 * 1000i32) as (u32));
     }
     0i32 as (*mut ::std::os::raw::c_void)
 }
 
 pub unsafe fn initCatMonitorThread() {
-    G_CAT_MONITOR_STOP = 0i32;
+    *G_CAT_MONITOR_STOP.get_mut() = 0;
     pthread_create(
         &mut G_CAT_MONITOR_HANDLE as (*mut *mut _opaque_pthread_t),
         0i32 as (*mut ::std::os::raw::c_void) as (*const _opaque_pthread_attr_t),
@@ -169,7 +168,7 @@ pub unsafe fn initCatMonitorThread() {
 }
 
 pub unsafe fn clearCatMonitor() {
-    G_CAT_MONITOR_STOP = 1i32;
+    *G_CAT_MONITOR_STOP.get_mut() = 1;
     pthread_join(
         G_CAT_MONITOR_HANDLE,
         0i32 as (*mut ::std::os::raw::c_void) as (*mut *mut ::std::os::raw::c_void),

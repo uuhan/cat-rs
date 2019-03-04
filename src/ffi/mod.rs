@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::mem;
 use std::ptr;
+use std::sync::atomic::AtomicI32;
 
 #[macro_use]
 mod mac;
@@ -52,7 +53,8 @@ use sds::catsdsnew;
 use transaction::createCatTransaction;
 
 /// cat static
-static mut G_CAT_INIT: i32 = 0i32;
+static mut G_CAT_INIT: AtomicI32 = AtomicI32::new(0);
+static mut G_CAT_ENABLED_FLAG: AtomicI32 = AtomicI32::new(0);
 
 #[allow(dead_code)]
 extern "C" {
@@ -69,7 +71,6 @@ extern "C" {
     fn clearCatSenderThread();
 
     fn destroyMessageIdHelper();
-    static mut g_cat_enabledFlag: i32;
     static mut g_config: CatClientInnerConfig;
     fn getNextMessageId() -> *mut u8;
     fn getNextMessageIdByAppkey(domain: *const u8) -> *mut u8;
@@ -80,7 +81,7 @@ extern "C" {
 
 #[inline]
 pub fn isCatEnabled() -> bool {
-    unsafe { g_cat_enabledFlag != 0 }
+    unsafe { *G_CAT_ENABLED_FLAG.get_mut() != 0 }
 }
 
 pub unsafe fn createMessageId() -> *mut u8 {
@@ -160,7 +161,7 @@ pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
 }
 
 pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig) -> i32 {
-    if G_CAT_INIT != 0 {
+    if *G_CAT_INIT.get_mut() != 0 {
         0
     } else {
         let mut f = File::open("cat.client.json").unwrap();
@@ -168,7 +169,7 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
         f.read_to_string(&mut contents).unwrap();
         let conf: ClientConfig = serde_json::from_str(contents.as_str()).unwrap();
 
-        G_CAT_INIT = 1i32;
+        *G_CAT_INIT.get_mut() = 1;
         signal(SIGPIPE, SIG_IGN);
         initCatClientConfig(config);
 
@@ -191,8 +192,8 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
         initMessageManager(appkey, g_config.selfHost);
         initMessageIdHelper();
         if initCatServerConnManager() == 0 {
-            G_CAT_INIT = 0;
-            g_cat_enabledFlag = 0;
+            *G_CAT_INIT.get_mut() = 0;
+            *G_CAT_ENABLED_FLAG.get_mut() = 0;
             error!(
                 "Failed to initialize cat: Error occurred while getting router from remote server."
             );
@@ -201,7 +202,7 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
             initCatAggregatorThread();
             initCatSenderThread();
             initCatMonitorThread();
-            g_cat_enabledFlag = 1;
+            *G_CAT_ENABLED_FLAG.get_mut() = 1;
             1
         }
     }
@@ -212,9 +213,9 @@ pub unsafe fn catClientInit(appkey: *const u8) -> i32 {
 }
 
 pub unsafe fn catClientDestroy() -> i32 {
-    if g_cat_enabledFlag != 0 {
-        g_cat_enabledFlag = 0;
-        G_CAT_INIT = 0;
+    if *G_CAT_ENABLED_FLAG.get_mut() != 0 {
+        *G_CAT_ENABLED_FLAG.get_mut() = 0;
+        *G_CAT_INIT.get_mut() = 0;
         clearCatMonitor();
         catMessageManagerDestroy();
         clearCatAggregatorThread();

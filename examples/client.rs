@@ -1,6 +1,11 @@
 #![allow(unused)]
 extern crate cat_rs as cat;
 
+use std::alloc::System;
+
+#[global_allocator]
+static GLOBAL: System = System;
+
 use cat::logEvent;
 use cat::CatClient;
 use cat::CatTransaction;

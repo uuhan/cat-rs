@@ -65,6 +65,7 @@ impl CatClient {
                 self.config,
             );
             if rc == 0 {
+                error!("{}", CatError::CatClientInitError);
                 Err(CatError::CatClientInitError)
             } else {
                 Ok(self)

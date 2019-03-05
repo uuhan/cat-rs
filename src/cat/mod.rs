@@ -58,7 +58,7 @@ impl CatClient {
     }
 
     /// initialize cat client
-    pub fn init(&mut self) -> Result<&Self> {
+    pub fn init(&mut self) -> Result<&mut Self> {
         unsafe {
             let rc = catClientInitWithConfig(
                 CString::new(self.appkey.clone()).unwrap().as_ptr() as *const u8,

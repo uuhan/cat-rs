@@ -105,38 +105,31 @@ impl CatClient {
     }
 }
 
-impl Drop for CatClient {
-    fn drop(&mut self) {
-        warn!("cat client destroyed!");
-        self.destroy()
-    }
-}
-
 pub struct CatTransaction(*mut _CatTransaction);
 
 impl CatTransaction {
     pub fn new<T: ToString>(type_: T, name: T) -> Self {
         unsafe {
             let tr = newTransaction(c!(type_.to_string()), c!(name.to_string()));
-            CatTransaction(tr)
+            if tr.is_null() {
+                error!("create transaction failed!");
+                panic!("create transaction failed!")
+            } else {
+                CatTransaction(tr)
+            }
         }
     }
 
     pub fn complete(&mut self) {
         unsafe {
             let tr = self.0;
-            if let Some(cp) = (*tr).complete {
-                cp(tr)
+            if let Some(complete) = (*tr).complete {
+                debug!("completing this transaction");
+                complete(tr)
             } else {
-                panic!()
+                error!("transaction's complete method is missing");
             }
         }
-    }
-}
-
-impl Drop for CatTransaction {
-    fn drop(&mut self) {
-        self.complete()
     }
 }
 

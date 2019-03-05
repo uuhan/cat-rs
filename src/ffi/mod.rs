@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::mem;
 use std::ptr;
-use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicUsize;
 
 #[macro_use]
 mod mac;
@@ -53,8 +53,8 @@ use sds::catsdsnew;
 use transaction::createCatTransaction;
 
 /// cat static
-static mut G_CAT_INIT: AtomicI32 = AtomicI32::new(0);
-static mut G_CAT_ENABLED_FLAG: AtomicI32 = AtomicI32::new(0);
+static mut G_CAT_INIT: AtomicUsize = AtomicUsize::new(0);
+static mut G_CAT_ENABLED_FLAG: AtomicUsize = AtomicUsize::new(0);
 
 #[allow(dead_code)]
 extern "C" {

@@ -7,7 +7,7 @@ use super::sds::catsdsfree;
 use super::sds::catsdsnew;
 use libc::free;
 
-use std::sync::atomic::AtomicIsize;
+use std::sync::atomic::AtomicUsize;
 
 extern "C" {
     fn catsdscatfmt(s: *mut u8, fmt: *const u8, ...) -> *mut u8;
@@ -29,7 +29,7 @@ extern "C" {
     fn updateCatServerConn() -> i32;
 }
 
-static mut G_CAT_MONITOR_STOP: AtomicIsize = AtomicIsize::new(0);
+static mut G_CAT_MONITOR_STOP: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Copy)]
 #[repr(C)]

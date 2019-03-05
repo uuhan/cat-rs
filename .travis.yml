@@ -5,9 +5,9 @@ sudo: false
 
 matrix:
   include:
-    # - env: FEATURES=""
-    #   rust: stable
-    #   os: linux
+    - env: FEATURES=""
+      rust: stable
+      os: linux
     - env: FEATURES=""
       rust: nightly
       os: linux

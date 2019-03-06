@@ -22,3 +22,4 @@ features = ["derive"]
 
 [dev-dependencies]
 tokio = "0.1.16"
+threadpool = "1.7.1"

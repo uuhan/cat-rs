@@ -8,6 +8,7 @@ use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
 use std::result;
+use std::thread;
 
 macro_rules! c {
     ($data:ident) => {
@@ -105,31 +106,35 @@ impl CatClient {
     }
 }
 
-pub struct CatTransaction(*mut _CatTransaction);
+pub struct CatTransaction(thread::JoinHandle<()>);
 
 impl CatTransaction {
     pub fn new<T: ToString>(type_: T, name: T) -> Self {
         unsafe {
-            let tr = newTransaction(c!(type_.to_string()), c!(name.to_string()));
-            if tr.is_null() {
-                error!("create transaction failed!");
-                panic!("create transaction failed!")
-            } else {
-                CatTransaction(tr)
-            }
+            let t = type_.to_string();
+            let n = name.to_string();
+            let tr_handle: thread::JoinHandle<()> = thread::Builder::new()
+                .spawn(|| {
+                    let tr = newTransaction(c!(t), c!(n));
+                    if tr.is_null() {
+                        error!("create transaction failed!");
+                        panic!("create transaction failed!")
+                    } else {
+                        if let Some(complete) = (*tr).complete {
+                            debug!("completing this transaction");
+                            complete(tr);
+                        } else {
+                            error!("transaction's complete method is missing");
+                        }
+                    }
+                })
+                .unwrap();
+            CatTransaction(tr_handle)
         }
     }
 
-    pub fn complete(&mut self) {
-        unsafe {
-            let tr = self.0;
-            if let Some(complete) = (*tr).complete {
-                debug!("completing this transaction");
-                complete(tr)
-            } else {
-                error!("transaction's complete method is missing");
-            }
-        }
+    pub fn complete(self) {
+        debug!("fake complete");
     }
 }
 

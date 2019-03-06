@@ -15,12 +15,13 @@ use cat::CatTransaction;
 pub fn main() -> Result<(), Box<Error>> {
     let mut cat = CatClient::new("test");
     cat.init()?;
-    let mut tr = CatTransaction::new("foo", "bar");
 
+    let mut tr = CatTransaction::new("foo", "bar");
     unsafe {
         logEvent("foo", "bar", "0", "");
         logEvent("foo", "bar", "1", "");
     }
+    tr.complete();
 
     Ok(())
 }

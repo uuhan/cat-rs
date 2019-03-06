@@ -2,18 +2,14 @@
 #[macro_use]
 extern crate log;
 extern crate libc;
-extern crate num_cpus;
-extern crate threadpool;
 
 use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
-use std::option::Option;
 use std::result;
 use std::sync::mpsc;
 use std::thread;
-use threadpool::ThreadPool;
 
 macro_rules! c {
     ($data:ident) => {
@@ -173,82 +169,6 @@ impl CatTransaction {
                 data.to_string(),
             ))
             .unwrap()
-    }
-}
-
-pub struct CatTransactionService {
-    pub pool_size: usize,
-    pub pool: Option<ThreadPool>,
-}
-
-impl CatTransactionService {
-    pub fn new(p: Option<usize>) -> Self {
-        CatTransactionService {
-            pool_size: p.unwrap_or(num_cpus::get()),
-            pool: None,
-        }
-    }
-
-    pub fn pool_size(mut self, pool_size: usize) -> Self {
-        assert!(pool_size > 0);
-        self.pool_size = pool_size;
-        self
-    }
-
-    pub fn init(mut self) -> Self {
-        let pool = ThreadPool::new(self.pool_size);
-        self.pool = Some(pool);
-        self
-    }
-
-    pub fn create<T: ToString>(&mut self, type_: T, name: T) -> CatTransaction {
-        let t = type_.to_string();
-        let n = name.to_string();
-        let (sender, receiver) = mpsc::channel::<CatMessage>();
-
-        if let Some(ref pool) = self.pool {
-            pool.execute(move || {
-                debug!("create a new transaction");
-                let tr = unsafe { newTransaction(c!(t), c!(n)) };
-
-                if tr.is_null() {
-                    error!("create transaction failed!");
-                    panic!("create transaction failed!")
-                } else {
-                    // loop in this thread as is this root transaction
-                    'trans: loop {
-                        let message = receiver.recv().unwrap();
-
-                        match message {
-                            CatMessage::CompleteThis => {
-                                break 'trans;
-                            }
-                            CatMessage::LogEvent(type_, name, status, data) => {
-                                logEvent(type_, name, status, data)
-                            }
-                        }
-                    }
-
-                    if let Some(complete) = unsafe { (*tr).complete } {
-                        debug!("complete this transaction");
-                        unsafe {
-                            complete(tr);
-                        };
-                    } else {
-                        error!("transaction's complete method is missing");
-                    }
-                }
-            })
-        } else {
-            // TODO: run in current thread?
-            panic!()
-        }
-
-        CatTransaction { sender }
-    }
-
-    pub fn destroy(self) {
-        unimplemented!()
     }
 }
 

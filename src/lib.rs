@@ -2,13 +2,18 @@
 #[macro_use]
 extern crate log;
 extern crate libc;
+extern crate num_cpus;
+extern crate threadpool;
 
 use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
+use std::option::Option;
 use std::result;
+use std::sync::mpsc;
 use std::thread;
+use threadpool::ThreadPool;
 
 macro_rules! c {
     ($data:ident) => {
@@ -24,9 +29,8 @@ pub(crate) mod ffi;
 use ffi::catClientDestroy;
 use ffi::catClientInitWithConfig;
 use ffi::catVersion;
-use ffi::CatClientConfig;
-use ffi::_CatTransaction;
 use ffi::newTransaction;
+use ffi::CatClientConfig;
 use ffi::DEFAULT_CCAT_CONFIG;
 
 #[derive(Debug, Clone)]
@@ -73,24 +77,25 @@ impl CatClient {
     }
 
     /// set cat client config
-    pub fn config(&mut self, config: &mut CatClientConfig) -> &Self {
+    pub fn config(&mut self, config: &mut CatClientConfig) -> &mut Self {
         self.config = *config;
         self
     }
 
     /// initialize cat client
     pub fn init(&mut self) -> Result<&mut Self> {
-        unsafe {
-            let rc = catClientInitWithConfig(
+        let rc = unsafe {
+            catClientInitWithConfig(
                 CString::new(self.appkey.clone()).unwrap().as_ptr(),
                 &mut self.config,
-            );
-            if rc == 0 {
-                error!("{}", CatError::CatClientInitError);
-                Err(CatError::CatClientInitError)
-            } else {
-                Ok(self)
-            }
+            )
+        };
+
+        if rc == 0 {
+            error!("{}", CatError::CatClientInitError);
+            Err(CatError::CatClientInitError)
+        } else {
+            Ok(self)
         }
     }
 
@@ -106,35 +111,144 @@ impl CatClient {
     }
 }
 
-pub struct CatTransaction(thread::JoinHandle<()>);
+pub enum CatMessage {
+    LogEvent(String, String, String, String),
+    CompleteThis,
+}
+
+pub struct CatTransaction {
+    sender: mpsc::Sender<CatMessage>,
+}
 
 impl CatTransaction {
-    pub fn new<T: ToString>(type_: T, name: T) -> Self {
-        unsafe {
-            let t = type_.to_string();
-            let n = name.to_string();
-            let tr_handle: thread::JoinHandle<()> = thread::Builder::new()
-                .spawn(|| {
-                    let tr = newTransaction(c!(t), c!(n));
-                    if tr.is_null() {
-                        error!("create transaction failed!");
-                        panic!("create transaction failed!")
-                    } else {
-                        if let Some(complete) = (*tr).complete {
-                            debug!("completing this transaction");
-                            complete(tr);
-                        } else {
-                            error!("transaction's complete method is missing");
+    pub fn new<T: ToString>(_type: T, _name: T) -> Self {
+        let (sender, receiver) = mpsc::channel::<CatMessage>();
+        let _type = _type.to_string();
+        let _name = _name.to_string();
+        thread::spawn(move || {
+            debug!("create a new transaction");
+            let tr = unsafe { newTransaction(c!(_type), c!(_name)) };
+
+            if tr.is_null() {
+                error!("create transaction failed!");
+                panic!("create transaction failed!")
+            } else {
+                // loop in this thread as is this root transaction
+                'trans: loop {
+                    let message = receiver.recv().unwrap();
+
+                    match message {
+                        CatMessage::CompleteThis => {
+                            break 'trans;
+                        }
+                        CatMessage::LogEvent(type_, name, status, data) => {
+                            logEvent(type_, name, status, data)
                         }
                     }
-                })
-                .unwrap();
-            CatTransaction(tr_handle)
+                }
+
+                if let Some(complete) = unsafe { (*tr).complete } {
+                    debug!("complete this transaction");
+                    unsafe {
+                        complete(tr);
+                    };
+                } else {
+                    error!("transaction's complete method is missing");
+                }
+            }
+        });
+        CatTransaction { sender }
+    }
+
+    pub fn complete(&self) {
+        self.sender.send(CatMessage::CompleteThis).unwrap()
+    }
+
+    pub fn log<T: ToString>(&self, type_: T, name: T, status: T, data: T) {
+        self.sender
+            .send(CatMessage::LogEvent(
+                type_.to_string(),
+                name.to_string(),
+                status.to_string(),
+                data.to_string(),
+            ))
+            .unwrap()
+    }
+}
+
+pub struct CatTransactionService {
+    pub pool_size: usize,
+    pub pool: Option<ThreadPool>,
+}
+
+impl CatTransactionService {
+    pub fn new(p: Option<usize>) -> Self {
+        CatTransactionService {
+            pool_size: p.unwrap_or(num_cpus::get()),
+            pool: None,
         }
     }
 
-    pub fn complete(self) {
-        debug!("fake complete");
+    pub fn pool_size(mut self, pool_size: usize) -> Self {
+        assert!(pool_size > 0);
+        self.pool_size = pool_size;
+        self
+    }
+
+    pub fn init(mut self) -> Self {
+        let pool = ThreadPool::new(self.pool_size);
+        self.pool = Some(pool);
+        self
+    }
+
+    pub fn create<T: ToString>(&mut self, type_: T, name: T) -> CatTransaction {
+        let t = type_.to_string();
+        let n = name.to_string();
+        let (sender, receiver) = mpsc::channel::<CatMessage>();
+
+        if let Some(ref pool) = self.pool {
+            pool.execute(move || {
+                debug!("create a new transaction");
+                let tr = unsafe { newTransaction(c!(t), c!(n)) };
+
+                if tr.is_null() {
+                    error!("create transaction failed!");
+                    panic!("create transaction failed!")
+                } else {
+                    // loop in this thread as is this root transaction
+                    'trans: loop {
+                        let message = receiver.recv().unwrap();
+
+                        match message {
+                            CatMessage::CompleteThis => {
+                                break 'trans;
+                            }
+                            CatMessage::LogEvent(type_, name, status, data) => {
+                                logEvent(type_, name, status, data)
+                            }
+                        }
+                    }
+
+                    if let Some(complete) = unsafe { (*tr).complete } {
+                        debug!("complete this transaction");
+                        unsafe {
+                            complete(tr);
+                        };
+                    } else {
+                        error!("transaction's complete method is missing");
+                    }
+                }
+            })
+        } else {
+            // TODO: run in current thread?
+            panic!()
+        }
+
+        CatTransaction { sender }
+    }
+
+    pub fn destroy(self) {
+        unimplemented!()
     }
 }
 

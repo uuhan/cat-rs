@@ -11,6 +11,8 @@ use std::ffi::CString;
 use std::fmt;
 use std::result;
 use std::sync::mpsc;
+use std::thread::sleep;
+use std::time::Duration;
 
 use threadpool::ThreadPool;
 
@@ -140,28 +142,31 @@ impl CatTransaction {
                 } else {
                     // loop in this thread as is this root transaction
                     'trans: loop {
-                        let message = receiver.recv().unwrap();
-
-                        match message {
-                            // TODO: inner transaction
-                            CatMessage::Transaction(name) => {
-                                let tr = unsafe { newTransaction(c!(_type.clone()), c!(name)) };
-                                if !tr.is_null() {
-                                    if let Some(complete) = unsafe { (*tr).complete } {
-                                        unsafe {
-                                            complete(tr);
-                                        };
-                                    } else {
-                                        error!("transaction's complete method is missing");
+                        if let Ok(message) = receiver.recv() {
+                            match message {
+                                // TODO: inner transaction
+                                CatMessage::Transaction(name) => {
+                                    let tr = unsafe { newTransaction(c!(_type.clone()), c!(name)) };
+                                    if !tr.is_null() {
+                                        if let Some(complete) = unsafe { (*tr).complete } {
+                                            unsafe {
+                                                complete(tr);
+                                            };
+                                        } else {
+                                            error!("transaction's complete method is missing");
+                                        }
                                     }
                                 }
+                                CatMessage::LogEvent(type_, name, status, data) => {
+                                    logEvent(type_, name, status, data)
+                                }
+                                CatMessage::CompleteThis => {
+                                    break 'trans;
+                                }
                             }
-                            CatMessage::LogEvent(type_, name, status, data) => {
-                                logEvent(type_, name, status, data)
-                            }
-                            CatMessage::CompleteThis => {
-                                break 'trans;
-                            }
+                        } else {
+                            error!("receive job failed!");
+                            sleep(Duration::from_millis(100));
                         }
                     }
 

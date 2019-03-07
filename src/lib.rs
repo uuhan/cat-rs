@@ -2,6 +2,8 @@
 #[macro_use]
 extern crate log;
 extern crate libc;
+extern crate num_cpus;
+extern crate threadpool;
 
 use std::error;
 use std::ffi::CStr;
@@ -9,7 +11,8 @@ use std::ffi::CString;
 use std::fmt;
 use std::result;
 use std::sync::mpsc;
-use std::thread;
+
+use threadpool::ThreadPool;
 
 macro_rules! c {
     ($data:ident) => {
@@ -19,6 +22,10 @@ macro_rules! c {
         CString::new($expr).unwrap().as_ptr()
     };
 }
+
+thread_local!(
+    static POOL: ThreadPool = ThreadPool::new(num_cpus::get()*2)
+);
 
 pub(crate) mod ffi;
 
@@ -109,6 +116,7 @@ impl CatClient {
 
 pub enum CatMessage {
     LogEvent(String, String, String, String),
+    Transaction(String),
     CompleteThis,
 }
 
@@ -121,37 +129,52 @@ impl CatTransaction {
         let (sender, receiver) = mpsc::channel::<CatMessage>();
         let _type = _type.to_string();
         let _name = _name.to_string();
-        thread::spawn(move || {
-            debug!("create a new transaction");
-            let tr = unsafe { newTransaction(c!(_type), c!(_name)) };
+        POOL.with(|pool| {
+            pool.execute(move || {
+                debug!("create a new transaction: {} / {}", _type, _name);
+                let tr = unsafe { newTransaction(c!(_type.clone()), c!(_name)) };
 
-            if tr.is_null() {
-                error!("create transaction failed!");
-                panic!("create transaction failed!")
-            } else {
-                // loop in this thread as is this root transaction
-                'trans: loop {
-                    let message = receiver.recv().unwrap();
+                if tr.is_null() {
+                    error!("create transaction failed!");
+                    panic!("create transaction failed!")
+                } else {
+                    // loop in this thread as is this root transaction
+                    'trans: loop {
+                        let message = receiver.recv().unwrap();
 
-                    match message {
-                        CatMessage::CompleteThis => {
-                            break 'trans;
-                        }
-                        CatMessage::LogEvent(type_, name, status, data) => {
-                            logEvent(type_, name, status, data)
+                        match message {
+                            // TODO: inner transaction
+                            CatMessage::Transaction(name) => {
+                                let tr = unsafe { newTransaction(c!(_type.clone()), c!(name)) };
+                                if !tr.is_null() {
+                                    if let Some(complete) = unsafe { (*tr).complete } {
+                                        unsafe {
+                                            complete(tr);
+                                        };
+                                    } else {
+                                        error!("transaction's complete method is missing");
+                                    }
+                                }
+                            }
+                            CatMessage::LogEvent(type_, name, status, data) => {
+                                logEvent(type_, name, status, data)
+                            }
+                            CatMessage::CompleteThis => {
+                                break 'trans;
+                            }
                         }
                     }
-                }
 
-                if let Some(complete) = unsafe { (*tr).complete } {
-                    debug!("complete this transaction");
-                    unsafe {
-                        complete(tr);
-                    };
-                } else {
-                    error!("transaction's complete method is missing");
+                    if let Some(complete) = unsafe { (*tr).complete } {
+                        debug!("complete this transaction");
+                        unsafe {
+                            complete(tr);
+                        };
+                    } else {
+                        error!("transaction's complete method is missing");
+                    }
                 }
-            }
+            });
         });
         CatTransaction { sender }
     }

@@ -198,17 +198,11 @@ impl CatTransaction {
 /// log a cat event
 ///
 /// # Arguments
-///
 /// * `type_` - event type
-///
 /// * `name_` - event name
-///
 /// * `status` - event status type "0" or other
-///
 /// * `data` - event data
-///
 /// # Example
-///
 /// ```rust,no_run
 /// // logEvent("app", "foo", "0", "");
 /// ```
@@ -220,5 +214,16 @@ pub fn logEvent<S: ToString>(type_: S, name_: S, status: S, data: S) {
             c!(status.to_string()),
             c!(data.to_string()),
         )
+    }
+}
+
+pub fn newHeartBeat<S: ToString>(_type: S, _name: S) {
+    info!(
+        "start a new heart beat: {} {}",
+        _type.to_string(),
+        _name.to_string(),
+    );
+    unsafe {
+        ffi::newHeartBeat(c!(_type.to_string()), c!(_name.to_string()));
     }
 }

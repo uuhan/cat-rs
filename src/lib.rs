@@ -10,9 +10,8 @@ use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
 use std::result;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
-use std::thread::sleep;
-use std::time::Duration;
 
 use threadpool::ThreadPool;
 
@@ -124,6 +123,7 @@ pub enum CatMessage {
 
 pub struct CatTransaction {
     sender: mpsc::Sender<CatMessage>,
+    open: AtomicBool,
 }
 
 impl CatTransaction {
@@ -142,31 +142,35 @@ impl CatTransaction {
                 } else {
                     // loop in this thread as is this root transaction
                     'trans: loop {
-                        if let Ok(message) = receiver.recv() {
-                            match message {
-                                // TODO: inner transaction
-                                CatMessage::Transaction(name) => {
-                                    let tr = unsafe { newTransaction(c!(_type.clone()), c!(name)) };
-                                    if !tr.is_null() {
-                                        if let Some(complete) = unsafe { (*tr).complete } {
-                                            unsafe {
-                                                complete(tr);
-                                            };
-                                        } else {
-                                            error!("transaction's complete method is missing");
+                        match receiver.recv() {
+                            Ok(message) => {
+                                match message {
+                                    // TODO: inner transaction
+                                    CatMessage::Transaction(name) => {
+                                        let tr =
+                                            unsafe { newTransaction(c!(_type.clone()), c!(name)) };
+                                        if !tr.is_null() {
+                                            if let Some(complete) = unsafe { (*tr).complete } {
+                                                unsafe {
+                                                    complete(tr);
+                                                };
+                                            } else {
+                                                error!("transaction's complete method is missing");
+                                            }
                                         }
                                     }
-                                }
-                                CatMessage::LogEvent(type_, name, status, data) => {
-                                    logEvent(type_, name, status, data)
-                                }
-                                CatMessage::CompleteThis => {
-                                    break 'trans;
+                                    CatMessage::LogEvent(type_, name, status, data) => {
+                                        logEvent(type_, name, status, data)
+                                    }
+                                    CatMessage::CompleteThis => {
+                                        break 'trans;
+                                    }
                                 }
                             }
-                        } else {
-                            error!("receive job failed!");
-                            sleep(Duration::from_millis(100));
+                            Err(err) => {
+                                error!("receive job failed, err: {}", err);
+                                break 'trans;
+                            }
                         }
                     }
 
@@ -181,22 +185,41 @@ impl CatTransaction {
                 }
             });
         });
-        CatTransaction { sender }
+        CatTransaction {
+            sender,
+            open: AtomicBool::new(true),
+        }
     }
 
-    pub fn complete(&self) {
-        self.sender.send(CatMessage::CompleteThis).unwrap()
+    pub fn complete(&mut self) {
+        if *self.open.get_mut() {
+            self.sender
+                .send(CatMessage::CompleteThis)
+                .map_err(|e| {
+                    error!("complete transaction error: {}", e);
+                })
+                .unwrap()
+        } else {
+            warn!("complete a closed transaction");
+        }
     }
 
-    pub fn log<T: ToString>(&self, type_: T, name: T, status: T, data: T) {
-        self.sender
-            .send(CatMessage::LogEvent(
-                type_.to_string(),
-                name.to_string(),
-                status.to_string(),
-                data.to_string(),
-            ))
-            .unwrap()
+    pub fn log<T: ToString>(&mut self, type_: T, name: T, status: T, data: T) {
+        if *self.open.get_mut() {
+            self.sender
+                .send(CatMessage::LogEvent(
+                    type_.to_string(),
+                    name.to_string(),
+                    status.to_string(),
+                    data.to_string(),
+                ))
+                .map_err(|e| {
+                    error!("log event error: {}", e);
+                })
+                .unwrap()
+        } else {
+            warn!("log event on a closed transaction");
+        }
     }
 }
 

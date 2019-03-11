@@ -6,8 +6,9 @@ use std::path::PathBuf;
 fn main() {
     let bindings = bindgen::Builder::default()
         .clang_args(&["-x", "c", "-std=gnu99"])
+        .clang_arg(format!("-Iccat"))
         .rust_target(bindgen::RustTarget::Nightly)
-        .header("./ccat/client.h")
+        .header("./ccat/wrapper.h")
         .generate()
         .expect("Unable to generate bindings");
 

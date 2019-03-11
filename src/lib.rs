@@ -5,6 +5,8 @@ extern crate libc;
 extern crate num_cpus;
 extern crate threadpool;
 
+pub mod cat;
+
 use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;

@@ -5,7 +5,12 @@ version = "0.0.1"
 license = "MIT"
 authors = ["uuhan <xuminhui189@gmail.com>"]
 edition = "2018"
-links = "cat"
+include = [
+  "ccat/**",
+  "src/**",
+  "examples/**",
+  "README.md",
+]
 
 [build-dependencies]
 cc = "1.0.29"

@@ -103,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "cat-rs"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "bindgen 0.48.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",

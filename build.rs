@@ -63,4 +63,6 @@ fn main() {
         .file("ccat/ccat/server_connection_manager.c")
         .file("ccat/ccat/transaction.c")
         .compile("ccat");
+
+    println!("cargo:rerun-if-changed=ccat");
 }

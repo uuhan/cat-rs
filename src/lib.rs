@@ -27,7 +27,7 @@ macro_rules! c {
 }
 
 thread_local!(
-    static POOL: ThreadPool = ThreadPool::new(num_cpus::get()*2)
+    static POOL: ThreadPool = ThreadPool::new(num_cpus::get())
 );
 
 pub(crate) mod ffi;

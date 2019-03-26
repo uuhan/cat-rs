@@ -14,6 +14,8 @@ use std::mem;
 use std::ptr;
 use std::sync::atomic::AtomicUsize;
 
+use crate::c_str;
+
 #[macro_use]
 mod mac;
 
@@ -160,7 +162,7 @@ pub unsafe fn setThreadLocalMessageTreeParentId(messageId: *mut u8) {
     }
 }
 
-pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig) -> i32 {
+pub unsafe fn catClientInitWithConfig(appkey: c_str, config: CatClientConfig) -> i32 {
     if *G_CAT_INIT.get_mut() != 0 {
         0
     } else {
@@ -186,10 +188,10 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
             p as *const u8
         };
 
-        g_config.appkey = catsdsnew(appkey);
+        g_config.appkey = catsdsnew(appkey as *mut u8);
         g_config.serverHost = catsdsnew(ip_ptr);
 
-        initMessageManager(appkey, g_config.selfHost);
+        initMessageManager(appkey as *mut u8, g_config.selfHost);
         initMessageIdHelper();
         if initCatServerConnManager() == 0 {
             *G_CAT_INIT.get_mut() = 0;
@@ -208,7 +210,7 @@ pub unsafe fn catClientInitWithConfig(appkey: *const u8, config: CatClientConfig
     }
 }
 
-pub unsafe fn catClientInit(appkey: *const u8) -> i32 {
+pub unsafe fn catClientInit(appkey: c_str) -> i32 {
     catClientInitWithConfig(appkey, CatClientConfig::default())
 }
 

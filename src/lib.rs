@@ -17,6 +17,8 @@ use std::sync::mpsc;
 
 use threadpool::ThreadPool;
 
+pub type c_str = *const libc::c_char;
+
 macro_rules! c {
     ($data:ident) => {
         CString::new($data).unwrap().as_ptr()
@@ -33,11 +35,11 @@ thread_local!(
 pub(crate) mod ffi;
 
 use ffi::catClientDestroy;
-use ffi::catClientInitWithConfig;
 use ffi::catVersion;
 use ffi::newTransaction;
-use ffi::CatClientConfig;
-use ffi::DEFAULT_CCAT_CONFIG;
+
+use cat::catClientInitWithConfig;
+use cat::CatClientConfig;
 
 #[derive(Debug, Clone)]
 pub enum CatError {
@@ -78,7 +80,7 @@ impl CatClient {
     pub fn new<T: ToString>(appkey: T) -> Self {
         CatClient {
             appkey: appkey.to_string(),
-            config: unsafe { DEFAULT_CCAT_CONFIG },
+            config: cat::CatClientConfig::default(),
         }
     }
 
@@ -93,7 +95,7 @@ impl CatClient {
         let rc = unsafe {
             catClientInitWithConfig(
                 CString::new(self.appkey.clone()).unwrap().as_ptr(),
-                &mut self.config,
+                self.config,
             )
         };
 

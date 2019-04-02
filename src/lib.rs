@@ -88,12 +88,23 @@ impl CatClient {
 
     /// initialize cat client
     pub fn init(&mut self) -> Result<&mut Self> {
-        let rc = unsafe {
-            catClientInitWithConfig(
-                CString::new(self.appkey.clone()).unwrap().as_ptr(),
-                &mut self.config,
-            )
-        };
+        let mut rc: i32;
+        let mut count: i32 = 5;
+        loop {
+            rc = unsafe {
+                catClientInitWithConfig(
+                    CString::new(self.appkey.clone()).unwrap().as_ptr(),
+                    &mut self.config,
+                )
+            };
+
+            if rc == 0 && count >= 0 {
+                count -= 1;
+                continue;
+            } else {
+                break;
+            }
+        }
 
         if rc == 0 {
             error!("{}", CatError::CatClientInitError);

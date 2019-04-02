@@ -61,9 +61,9 @@ static int tryConnBestServer() {
         if (newFd > 0) {
             int retVal = 0;
 #ifdef WIN32
-            retVal = aeWait(newFd, AE_WRITABLE, 200);
+            retVal = aeWait(newFd, AE_WRITABLE, 1000);
 #else
-            retVal = catAeWait(newFd, AE_WRITABLE | AE_ERROR | AE_HUP, 200);
+            retVal = catAeWait(newFd, AE_WRITABLE | AE_ERROR | AE_HUP, 1000);
 #endif
             if (retVal > 0 && !(retVal & AE_ERROR) && (retVal & AE_WRITABLE)) {
                 INNER_LOG(CLOG_INFO, "Connect success.");
@@ -212,9 +212,9 @@ static int getRouterFromServer(char *hostName, unsigned int port, char *domain) 
     // wait newFd to be writable
     int retVal = 0;
 #ifdef WIN32
-    retVal = aeWait(sockfd, AE_WRITABLE, 200);
+    retVal = aeWait(sockfd, AE_WRITABLE, 1000);
 #else
-    retVal = catAeWait(sockfd, AE_WRITABLE | AE_ERROR | AE_HUP, 200);
+    retVal = catAeWait(sockfd, AE_WRITABLE | AE_ERROR | AE_HUP, 1000);
 #endif
     if (retVal > 0 && !(retVal & AE_ERROR) && (retVal & AE_WRITABLE)) {
         INNER_LOG(CLOG_INFO, "Connect to router server %s : %hd Success.", destIP, port);

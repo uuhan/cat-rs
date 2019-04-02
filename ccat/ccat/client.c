@@ -89,7 +89,7 @@ int catClientInitWithConfig(const char *appkey, CatClientConfig* config) {
     }
     g_cat_init = 1;
 
-    // signal(SIGPIPE, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
 
     initCatClientConfig(config);
 

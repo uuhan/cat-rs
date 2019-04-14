@@ -1,4 +1,25 @@
 #![allow(non_snake_case)]
+//! ## Rust Cat Bindings
+//!
+//! NB: This crate is meanly mostly created for Nodejs's Native Addons(using neon) currently.
+//!
+//! ## Usage
+//!
+//! ```rust,no_run
+//! extern crate cat_rs as cat;
+//! use cat::{
+//!     logEvent,
+//!     CatClient,
+//!     CatTransaction,
+//! };
+//!
+//! let mut cat = CatClient::new("test");
+//! cat.init()?;
+//! let mut tr = CatTransaction::new("foo", "bar");
+//! tr.log("test", "it", "0", "");
+//! tr.complete();
+//! Ok(())
+//! ```
 #[macro_use]
 extern crate log;
 extern crate libc;
@@ -220,6 +241,12 @@ impl CatTransaction {
         } else {
             warn!("log event on a closed transaction");
         }
+    }
+}
+
+impl Drop for CatTransaction {
+    fn drop(&mut self) {
+        self.complete()
     }
 }
 

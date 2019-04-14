@@ -14,11 +14,10 @@
 //! };
 //!
 //! let mut cat = CatClient::new("test");
-//! cat.init()?;
+//! cat.init().unwrap();
 //! let mut tr = CatTransaction::new("foo", "bar");
 //! tr.log("test", "it", "0", "");
 //! tr.complete();
-//! Ok(())
 //! ```
 #[macro_use]
 extern crate log;

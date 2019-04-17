@@ -243,12 +243,6 @@ impl CatTransaction {
     }
 }
 
-impl Drop for CatTransaction {
-    fn drop(&mut self) {
-        self.complete()
-    }
-}
-
 /// log a cat event
 ///
 /// # Arguments

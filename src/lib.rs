@@ -226,7 +226,8 @@ impl CatTransaction {
 
     pub fn log<T: ToString>(&mut self, type_: T, name: T, status: T, data: T) {
         if *self.open.get_mut() {
-            self.sender
+            match self
+                .sender
                 .send(CatMessage::LogEvent(
                     type_.to_string(),
                     name.to_string(),
@@ -235,8 +236,10 @@ impl CatTransaction {
                 ))
                 .map_err(|e| {
                     error!("log event error: {}", e);
-                })
-                .unwrap()
+                }) {
+                Ok(_) => {}
+                Err(e) => error!("log error: {:?}", e),
+            }
         } else {
             warn!("log event on a closed transaction");
         }

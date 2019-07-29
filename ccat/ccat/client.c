@@ -93,7 +93,7 @@ int catClientInitWithConfig(const char *appkey, CatClientConfig* config) {
 
     initCatClientConfig(config);
 
-    if (loadCatClientConfig(DEFAULT_XML_FILE) < 0) {
+    if (loadCatClientConfig() < 0) {
         g_cat_init = 0;
         g_cat_enabledFlag = 0;
         INNER_LOG(CLOG_ERROR, "Failed to initialize cat: Error occurred while loading client config.");

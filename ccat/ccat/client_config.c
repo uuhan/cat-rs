@@ -91,12 +91,16 @@ int parseCatClientConfig(ezxml_t f1) {
     return 0;
 }
 
-int loadCatClientConfig(const char *filename) {
-    ezxml_t config = getCatClientConfig(filename);
+int loadCatClientConfig() {
+    // 默认使用当前目录下的client.xml
+    ezxml_t config = getCatClientConfig("./client.xml");
     if (NULL == config) {
-        INNER_LOG(CLOG_WARNING, "File %s not exists.", filename);
-        INNER_LOG(CLOG_WARNING, "client.xml is required to initialize cat client!");
-        return -1;
+        config = getCatClientConfig(DEFAULT_XML_FILE);
+        if (NULL == config) {
+            INNER_LOG(CLOG_WARNING, "File %s not exists.", DEFAULT_XML_FILE);
+            INNER_LOG(CLOG_WARNING, "client.xml is required to initialize cat client!");
+            return -1;
+        }
     }
 
     if (parseCatClientConfig(config) < 0) {

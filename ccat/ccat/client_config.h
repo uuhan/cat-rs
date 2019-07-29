@@ -74,7 +74,7 @@ typedef struct _CatClientInnerConfig {
 
 extern CatClientInnerConfig g_config;
 
-int loadCatClientConfig(const char *filename);
+int loadCatClientConfig();
 
 void initCatClientConfig(CatClientConfig *config);
 

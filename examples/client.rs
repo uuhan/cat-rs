@@ -15,7 +15,7 @@ use cat::logEvent;
 use cat::CatClient;
 use cat::CatTransaction;
 
-pub fn main() -> Result<(), Box<Error>> {
+pub fn main() -> Result<(), Box<dyn Error>> {
     let mut cat = CatClient::new("test");
     cat.init()?;
 

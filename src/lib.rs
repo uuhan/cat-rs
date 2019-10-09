@@ -30,8 +30,9 @@ use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
 use std::result;
-use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use threadpool::ThreadPool;
 
@@ -143,7 +144,7 @@ pub enum CatMessage {
 
 pub struct CatTransaction {
     sender: mpsc::Sender<CatMessage>,
-    open: AtomicBool,
+    open: Arc<Mutex<bool>>,
 }
 
 impl CatTransaction {
@@ -151,6 +152,8 @@ impl CatTransaction {
         let (sender, receiver) = mpsc::channel::<CatMessage>();
         let _type = _type.to_string();
         let _name = _name.to_string();
+        let _open = Arc::new(Mutex::new(true));
+        let _open_keep = _open.clone();
         POOL.with(|pool| {
             pool.execute(move || {
                 debug!("create a new transaction: {} / {}", _type, _name);
@@ -166,22 +169,12 @@ impl CatTransaction {
                             Ok(message) => {
                                 match message {
                                     // TODO: inner transaction
-                                    CatMessage::Transaction(name) => {
-                                        let tr =
-                                            unsafe { newTransaction(c!(_type.clone()), c!(name)) };
-                                        if !tr.is_null() {
-                                            if let Some(complete) = unsafe { (*tr).complete } {
-                                                unsafe {
-                                                    complete(tr);
-                                                };
-                                            } else {
-                                                error!("transaction's complete method is missing");
-                                            }
-                                        }
-                                    }
+                                    CatMessage::Transaction(_name) => {}
+
                                     CatMessage::LogEvent(type_, name, status, data) => {
                                         logEvent(type_, name, status, data)
                                     }
+
                                     CatMessage::CompleteThis => {
                                         break 'trans;
                                     }
@@ -193,6 +186,10 @@ impl CatTransaction {
                             }
                         }
                     }
+
+                    let _open_guard = _open.clone();
+                    let mut v = _open_guard.try_lock().unwrap();
+                    *v = false;
 
                     if let Some(complete) = unsafe { (*tr).complete } {
                         debug!("complete this transaction");
@@ -207,12 +204,13 @@ impl CatTransaction {
         });
         CatTransaction {
             sender,
-            open: AtomicBool::new(true),
+            open: _open_keep,
         }
     }
 
     pub fn complete(&mut self) {
-        if *self.open.get_mut() {
+        let _open_guard = self.open.clone();
+        if *_open_guard.try_lock().unwrap() {
             self.sender
                 .send(CatMessage::CompleteThis)
                 .map_err(|e| {
@@ -225,7 +223,8 @@ impl CatTransaction {
     }
 
     pub fn log<T: ToString>(&mut self, type_: T, name: T, status: T, data: T) {
-        if *self.open.get_mut() {
+        let _open_guard = self.open.clone();
+        if *_open_guard.try_lock().unwrap() {
             match self
                 .sender
                 .send(CatMessage::LogEvent(
@@ -249,11 +248,14 @@ impl CatTransaction {
 /// log a cat event
 ///
 /// # Arguments
+///
 /// * `type_` - event type
 /// * `name_` - event name
 /// * `status` - event status type "0" or other
 /// * `data` - event data
+///
 /// # Example
+///
 /// ```rust,no_run
 /// // logEvent("app", "foo", "0", "");
 /// ```

@@ -29,6 +29,7 @@ use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt;
+use std::os::raw::{c_int, c_ulonglong};
 use std::result;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -270,5 +271,28 @@ pub fn newHeartBeat<S: ToString>(_type: S, _name: S) {
     );
     unsafe {
         ffi::newHeartBeat(c!(_type.to_string()), c!(_name.to_string()));
+    }
+}
+
+/// Metric Apis
+///
+/// # logMetricForCount
+///
+pub fn logMetricForCount<S: ToString>(name: S, quantity: i32) {
+    info!("logMetricForCount: {} {}", name.to_string(), quantity);
+
+    unsafe {
+        ffi::logMetricForCount(c!(name.to_string()), quantity as c_int);
+    }
+}
+
+/// Metric Apis
+///
+/// #logMetricForDuration
+///
+pub fn logMetricForDuration<S: ToString>(name: S, duration: u64) {
+    info!("logMetricForDuration: {} {}", name.to_string(), duration);
+    unsafe {
+        ffi::logMetricForDuration(c!(name.to_string()), duration as c_ulonglong);
     }
 }

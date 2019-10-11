@@ -36,20 +36,12 @@ use std::sync::Mutex;
 
 use threadpool::ThreadPool;
 
-macro_rules! c {
-    ($data:ident) => {
-        CString::new($data).unwrap().as_ptr()
-    };
-    ($expr:expr) => {
-        CString::new($expr).unwrap().as_ptr()
-    };
-}
-
 thread_local!(
     static POOL: ThreadPool = ThreadPool::new(num_cpus::get())
 );
 
 pub(crate) mod ffi;
+pub(crate) mod mac;
 
 use ffi::catClientDestroy;
 use ffi::catClientInitWithConfig;

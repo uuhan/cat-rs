@@ -5,7 +5,7 @@ keywords = ["cat", "ffi"]
 readme = "README.md"
 repository = "https://github.com/uuhan/cat-rs"
 homepage = "https://github.com/uuhan/cat-rs"
-version = "0.0.9"
+version = "0.1.0-alpha.0"
 license = "MIT"
 authors = ["uuhan <xuminhui189@gmail.com>"]
 edition = "2018"
@@ -16,20 +16,20 @@ exclude = [
 ]
 
 [build-dependencies]
-cc = "1.0.29"
-bindgen = "0.48.0"
+cc = "^1.0.29"
+bindgen = "^0.51.0"
 
 [dependencies]
-libc = "0.2.48"
-log = "0.4.6"
-serde_json = "1.0.38"
-threadpool = "1.7.1"
-num_cpus = "1.10.0"
+libc = "^0.2.48"
+log = "^0.4.6"
+serde_json = "^1.0.38"
+threadpool = "^1.7.1"
+num_cpus = "^1.10.0"
 
 [dependencies.serde]
-version = "1.0.88"
+version = "^1.0.88"
 features = ["derive"]
 
 [dev-dependencies]
-tokio = "0.1.16"
-threadpool = "1.7.1"
+tokio = "^0.1.16"
+threadpool = "^1.7.1"

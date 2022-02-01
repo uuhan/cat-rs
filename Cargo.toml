@@ -9,10 +9,11 @@ version = "0.1.0"
 license = "MIT"
 authors = ["uuhan <xuminhui189@gmail.com>"]
 edition = "2018"
-exclude = [
-  "/.travis.yml",
-  "src-rs/**",
-  "/wrapper.h",
+include = [
+  "src/**/*",
+  "lib/cat/lib/c/**/*",
+  "Cargo.toml",
+  "build.rs",
 ]
 
 [build-dependencies]

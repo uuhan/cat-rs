@@ -17,7 +17,7 @@ exclude = [
 
 [build-dependencies]
 cmake = "0.1"
-bindgen = "^0.51.0"
+bindgen = "^0.59"
 
 [dependencies]
 libc = "^0.2.48"

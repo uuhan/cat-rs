@@ -24,7 +24,6 @@ bindgen = "^0.59"
 libc = "^0.2.48"
 log = "^0.4.6"
 serde_json = "^1.0.38"
-threadpool = "^1.7.1"
 num_cpus = "^1.10.0"
 nodex = "0.1.3"
 abyss-promise = "0.1.1"
@@ -35,4 +34,3 @@ features = ["derive"]
 
 [dev-dependencies]
 tokio = "^0.1.16"
-threadpool = "^1.7.1"

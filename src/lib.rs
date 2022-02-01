@@ -8,7 +8,7 @@
 //! ```rust,no_run
 //! extern crate cat_rs as cat;
 //! use cat::{
-//!     logEvent,
+//!     log_event,
 //!     CatClient,
 //!     CatTransaction,
 //! };
@@ -19,12 +19,8 @@
 //! tr.log("test", "it", "0", "");
 //! tr.complete();
 //! ```
-#[macro_use]
-extern crate log;
-extern crate libc;
-extern crate num_cpus;
-extern crate threadpool;
-
+use log::*;
+use abyss_promise::Promise;
 use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -34,12 +30,6 @@ use std::result;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
-
-use threadpool::ThreadPool;
-
-thread_local!(
-    static POOL: ThreadPool = ThreadPool::new(num_cpus::get())
-);
 
 pub(crate) mod ffi;
 pub(crate) mod mac;
@@ -141,63 +131,64 @@ pub struct CatTransaction {
 }
 
 impl CatTransaction {
-    pub fn new<T: ToString>(_type: T, _name: T) -> Self {
+    pub fn new(ty: impl Into<String>, name: impl Into<String>) -> Self {
         let (sender, receiver) = mpsc::channel::<CatMessage>();
-        let _type = _type.to_string();
-        let _name = _name.to_string();
-        let _open = Arc::new(Mutex::new(true));
-        let _open_keep = _open.clone();
-        POOL.with(|pool| {
-            pool.execute(move || {
-                debug!("create a new transaction: {} / {}", _type, _name);
-                let tr = unsafe { newTransaction(c!(_type.clone()), c!(_name)) };
+        let open = Arc::new(Mutex::new(true));
+        let open_keep = open.clone();
+        let ty = ty.into();
+        let name = name.into();
 
-                if tr.is_null() {
-                    error!("create transaction failed!");
-                    panic!("create transaction failed!")
-                } else {
-                    // loop in this thread as is this root transaction
-                    'trans: loop {
-                        match receiver.recv() {
-                            Ok(message) => {
-                                match message {
-                                    // TODO: inner transaction
-                                    CatMessage::Transaction(_name) => {}
+        Promise::new(move || {
+            debug!("create a new transaction: {} / {}", ty, name);
+            let tr = unsafe { newTransaction(c!(ty), c!(name)) };
 
-                                    CatMessage::LogEvent(type_, name, status, data) => {
-                                        logEvent(type_, name, status, data)
-                                    }
+            if tr.is_null() {
+                error!("create transaction failed!");
+                panic!("create transaction failed!")
+            } else {
+                // loop in this thread as is this root transaction
+                'trans: loop {
+                    match receiver.recv() {
+                        Ok(message) => {
+                            match message {
+                                // TODO: inner transaction
+                                CatMessage::Transaction(_) => {}
 
-                                    CatMessage::CompleteThis => {
-                                        break 'trans;
-                                    }
+                                CatMessage::LogEvent(ty, name, status, data) => {
+                                    log_event(ty, name, status, data)
+                                }
+
+                                CatMessage::CompleteThis => {
+                                    break 'trans;
                                 }
                             }
-                            Err(err) => {
-                                error!("receive job failed, err: {}", err);
-                                break 'trans;
-                            }
+                        }
+                        Err(err) => {
+                            error!("receive job failed, err: {}", err);
+                            break 'trans;
                         }
                     }
-
-                    let _open_guard = _open.clone();
-                    let mut v = _open_guard.try_lock().unwrap();
-                    *v = false;
-
-                    if let Some(complete) = unsafe { (*tr).complete } {
-                        debug!("complete this transaction");
-                        unsafe {
-                            complete(tr);
-                        };
-                    } else {
-                        error!("transaction's complete method is missing");
-                    }
                 }
-            });
+
+                let _open_guard = open.clone();
+                let mut v = _open_guard.try_lock().unwrap();
+                *v = false;
+
+                if let Some(complete) = unsafe { (*tr).complete } {
+                    debug!("complete this transaction");
+                    unsafe {
+                        complete(tr);
+                    };
+                } else {
+                    error!("transaction's complete method is missing");
+                }
+            }
+
         });
+
         CatTransaction {
             sender,
-            open: _open_keep,
+            open: open_keep,
         }
     }
 
@@ -250,27 +241,32 @@ impl CatTransaction {
 /// # Example
 ///
 /// ```rust,no_run
-/// // logEvent("app", "foo", "0", "");
+/// // log_event("app", "foo", "0", "");
 /// ```
-pub fn logEvent<S: ToString>(type_: S, name_: S, status: S, data: S) {
+pub fn log_event(
+    ty: impl AsRef<str>,
+    name: impl AsRef<str>,
+    status: impl AsRef<str>,
+    data: impl AsRef<str>,
+) {
     unsafe {
         ffi::logEvent(
-            c!(type_.to_string()),
-            c!(name_.to_string()),
-            c!(status.to_string()),
-            c!(data.to_string()),
+            c!(ty.as_ref()),
+            c!(name.as_ref()),
+            c!(status.as_ref()),
+            c!(data.as_ref()),
         )
     }
 }
 
-pub fn newHeartBeat<S: ToString>(_type: S, _name: S) {
+pub fn new_heart_beat(ty: impl AsRef<str>, name: impl AsRef<str>) {
     info!(
         "start a new heart beat: {} {}",
-        _type.to_string(),
-        _name.to_string(),
+        ty.as_ref(),
+        name.as_ref(),
     );
     unsafe {
-        ffi::newHeartBeat(c!(_type.to_string()), c!(_name.to_string()));
+        ffi::newHeartBeat(c!(ty.as_ref()), c!(name.as_ref()));
     }
 }
 

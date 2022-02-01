@@ -1,17 +1,14 @@
 #![allow(unused)]
 extern crate cat_rs as cat;
-extern crate threadpool;
 
 use std::alloc::System;
 use std::error::Error;
 use std::result::Result;
 
-use threadpool::ThreadPool;
-
 #[global_allocator]
 static GLOBAL: System = System;
 
-use cat::logEvent;
+use cat::log_event;
 use cat::CatClient;
 use cat::CatTransaction;
 

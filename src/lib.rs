@@ -274,8 +274,7 @@ impl CatTransaction {
                 env.undefined()
             },
             [],
-        )?;
-        todo!()
+        )
     }
 }
 
@@ -320,7 +319,7 @@ pub fn new_heart_beat(ty: impl AsRef<str>, name: impl AsRef<str>) {
 ///
 /// # logMetricForCount
 ///
-pub fn logMetricForCount<S: ToString>(name: S, quantity: i32) {
+pub fn log_metric_for_count<S: ToString>(name: S, quantity: i32) {
     info!("logMetricForCount: {} {}", name.to_string(), quantity);
 
     unsafe {
@@ -330,9 +329,9 @@ pub fn logMetricForCount<S: ToString>(name: S, quantity: i32) {
 
 /// Metric Apis
 ///
-/// #logMetricForDuration
+/// # logMetricForDuration
 ///
-pub fn logMetricForDuration<S: ToString>(name: S, duration: u64) {
+pub fn log_metric_for_duration<S: ToString>(name: S, duration: u64) {
     info!("logMetricForDuration: {} {}", name.to_string(), duration);
     unsafe {
         ffi::logMetricForDuration(c!(name.to_string()), duration as c_ulonglong);

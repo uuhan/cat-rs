@@ -19,8 +19,9 @@
 //! tr.log("test", "it", "0", "");
 //! tr.complete();
 //! ```
-use log::*;
 use abyss_promise::Promise;
+use log::*;
+use nodex::prelude::*;
 use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -183,7 +184,6 @@ impl CatTransaction {
                     error!("transaction's complete method is missing");
                 }
             }
-
         });
 
         CatTransaction {
@@ -192,7 +192,7 @@ impl CatTransaction {
         }
     }
 
-    pub fn complete(&mut self) {
+    pub fn complete(&self) {
         let _open_guard = self.open.clone();
         if *_open_guard.try_lock().unwrap() {
             self.sender
@@ -206,7 +206,7 @@ impl CatTransaction {
         }
     }
 
-    pub fn log<T: ToString>(&mut self, type_: T, name: T, status: T, data: T) {
+    pub fn log<T: ToString>(&self, type_: T, name: T, status: T, data: T) {
         let _open_guard = self.open.clone();
         if *_open_guard.try_lock().unwrap() {
             match self
@@ -226,6 +226,56 @@ impl CatTransaction {
         } else {
             warn!("log event on a closed transaction");
         }
+    }
+}
+
+impl CatTransaction {
+    pub fn class(env: NapiEnv) -> NapiResult<JsClass> {
+        JsClass::new(
+            env,
+            "NodeCatTransaction",
+            move |mut this, [ty, name]: [JsString; 2]| {
+                let env = this.env();
+                let ty = ty.get()?;
+                let name = name.get()?;
+
+                let trans = CatTransaction::new(ty, name);
+
+                this.wrap(trans, move |_, _trans| Ok(()))?;
+
+                this.set(
+                    "complete",
+                    env.func(|this, []: Args<0>| {
+                        let env = this.env();
+                        if let Some(trans) = this.unwrap::<CatTransaction>()? {
+                            trans.complete();
+                        }
+                        env.undefined()
+                    })?,
+                )?;
+
+                this.set(
+                    "log",
+                    env.func(|this, [ty, name, state, data]: ArgsT<JsString, 4>| {
+                        let env = this.env();
+                        let ty = ty.get()?;
+                        let name = name.get()?;
+                        let state = state.get()?;
+                        let data = data.get()?;
+
+                        if let Some(trans) = this.unwrap::<CatTransaction>()? {
+                            trans.log(ty, name, state, data);
+                        }
+
+                        env.undefined()
+                    })?,
+                )?;
+
+                env.undefined()
+            },
+            [],
+        )?;
+        todo!()
     }
 }
 
@@ -260,11 +310,7 @@ pub fn log_event(
 }
 
 pub fn new_heart_beat(ty: impl AsRef<str>, name: impl AsRef<str>) {
-    info!(
-        "start a new heart beat: {} {}",
-        ty.as_ref(),
-        name.as_ref(),
-    );
+    info!("start a new heart beat: {} {}", ty.as_ref(), name.as_ref(),);
     unsafe {
         ffi::newHeartBeat(c!(ty.as_ref()), c!(name.as_ref()));
     }

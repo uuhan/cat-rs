@@ -1,0 +1,3 @@
+[submodule "lib/cat"]
+	path = lib/cat
+	url = https://github.com/dianping/cat

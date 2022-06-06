@@ -35,4 +35,4 @@ version = "^1.0.88"
 features = ["derive"]
 
 [dev-dependencies]
-tokio = "^0.1.16"
+tokio = "^1.8.4"
